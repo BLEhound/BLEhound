@@ -1,0 +1,4 @@
+(sym_lib_table
+	(version 7)
+	(lib (name "blehound")(type "KiCad")(uri "${KIPRJMOD}/lib/blehound.kicad_sym")(options "")(descr "this project's symbols (including the officially-sourced nRF54LM20A)"))
+)

@@ -1,0 +1,22 @@
+name: host-tests
+
+on:
+  push:
+    paths: ["host/**", ".github/workflows/host-tests.yml"]
+  pull_request:
+    paths: ["host/**"]
+  workflow_dispatch:
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+      - run: pip install -r host/requirements.txt
+      - name: Aggregator self-test
+        run: python3 host/tri_aggregator.py --selftest
+      - name: Byte-compile host scripts
+        run: python3 -m py_compile host/nrf_sniffer_extcap.py host/tri_aggregator.py

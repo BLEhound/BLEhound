@@ -1,0 +1,12 @@
+BLEhound
+Copyright 2026 The BLEhound Authors
+
+This product includes software developed as a Zephyr / nRF Connect SDK
+application. Zephyr RTOS and the nRF Connect SDK (including nrfxlib) are
+distributed under their own licenses (Apache-2.0 and Nordic license terms
+respectively) and are fetched at build time via `west update`; they are not
+redistributed in this repository.
+
+BLEhound's own source code is licensed under Apache-2.0 (see LICENSE).
+BLEhound's hardware design files are licensed under CERN-OHL-S-2.0
+(see hardware/LICENSE).

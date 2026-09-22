@@ -1,0 +1,13 @@
+"Target device: advertising + connection" btle.advertising_address == aa:bb:cc:dd:ee:ff || btle.access_address != 0x8e89bed6
+"Connection data only (all connections)" btle.access_address != 0x8e89bed6
+"Valid CONNECT_IND (real connection start)" btle.advertising_header.pdu_type == 0x05 && btle_rf.flags.crc_valid == 1
+"Target device: all advertising" btle.advertising_address == aa:bb:cc:dd:ee:ff
+"Advertising-channel packets only" btle.access_address == 0x8e89bed6
+"ATT/GATT application data only" btatt
+"LL control PDUs only" btle.data_header.llid == 0x03
+"CRC-valid packets only" btle_rf.flags.crc_valid == 1
+"CRC-error packets only" btle_rf.flags.crc_valid == 0
+"All CONNECT_IND (incl. bad CRC)" btle.advertising_header.pdu_type == 0x05
+"Some device advertising (replace address)" btle.advertising_address == 11:22:33:44:55:66
+"Some connection data (replace AA)" btle.access_address == 0x11223344
+"Exclude empty PDUs" btle.access_address != 0x8e89bed6 && btle.length > 0

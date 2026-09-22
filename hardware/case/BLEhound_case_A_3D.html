@@ -1,0 +1,1059 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<title>BLEhound case design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#f2f4f0; --panel:#e9ece6; --panel2:#dde2da; --ink:#1b201d; --muted:#5b655e; --line:#c5ccc3;
+  --accent:#1f5fbf; --cut:#d24a2a; --pcb:#2f7d4c; --pcb-dim:rgba(47,125,76,.16);
+  --warn-bg:#fbefe5; --warn-line:#e2a47f; --hole:#1b1f22; --ghost:rgba(27,32,29,.35);
+  --iso-edge:rgba(0,0,0,.35);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141716; --panel:#1d2220; --panel2:#262c29; --ink:#e3e7e1; --muted:#98a29b; --line:#39413c;
+    --accent:#7ea8ff; --cut:#ff7d5c; --pcb:#4db072; --pcb-dim:rgba(77,176,114,.2);
+    --warn-bg:#2b2018; --warn-line:#8a5535; --hole:#0b0d0e; --ghost:rgba(227,231,225,.4);
+    --iso-edge:rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141716; --panel:#1d2220; --panel2:#262c29; --ink:#e3e7e1; --muted:#98a29b; --line:#39413c;
+  --accent:#7ea8ff; --cut:#ff7d5c; --pcb:#4db072; --pcb-dim:rgba(77,176,114,.2);
+  --warn-bg:#2b2018; --warn-line:#8a5535; --hole:#0b0d0e; --ghost:rgba(227,231,225,.4);
+  --iso-edge:rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.75 'Noto Sans SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif;padding-block:32px 80px;padding-inline:24px}
+.wrap{max-width:1120px;margin:0 auto}
+.eyebrow{font:700 12px/1 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 14px}
+h1{font:700 34px/1.25 'Noto Sans SC',sans-serif;margin:0 0 14px;text-wrap:balance;max-width:22em}
+h2{font:700 22px/1.3 'Noto Sans SC',sans-serif;margin:0 0 6px;text-wrap:balance}
+h3{font:700 15px/1.4 'Noto Sans SC',sans-serif;margin:0 0 6px}
+p{margin:0 0 10px;max-width:68ch}
+.lede{font-size:16.5px;color:var(--muted);max-width:60ch}
+.mono,.num{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.warn{background:var(--warn-bg);border-left:4px solid var(--warn-line);padding:14px 18px;margin:26px 0 8px;max-width:none}
+.warn p{max-width:80ch;margin:0}
+.warn strong{font-weight:700}
+section{margin-top:56px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:0;border-top:1px solid var(--line);border-left:1px solid var(--line);margin-top:18px}
+.fact{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 14px}
+.fact .k{font:500 11px/1.2 'Archivo',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.fact .v{font-size:14.5px;line-height:1.55}
+figure{margin:0;background:var(--panel);border:1px solid var(--line);padding:14px 14px 10px}
+figure svg{display:block;width:100%;height:auto;max-width:100%}
+figcaption{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.55}
+figure.iso{padding:6px 6px 10px}
+figure.wide{margin-top:16px}
+figure.wide svg{max-width:820px;margin:0 auto}
+.concept-head{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start;margin-bottom:18px}
+.letter{font:800 64px/1 'Archivo',sans-serif;color:var(--accent);letter-spacing:-.02em;margin-top:-6px}
+.concept-head .name{font:700 13px/1 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.fig-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:16px;align-items:start}
+.fig-col{display:grid;gap:16px}
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:18px}
+.note{border-top:2px solid var(--line);padding-top:10px}
+.note h3{font-size:13px;letter-spacing:.06em;color:var(--muted)}
+.note ul{margin:0;padding-left:18px;font-size:14px}
+.note li{margin-bottom:4px}
+.spec{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13.5px;color:var(--muted);margin:0 0 14px}
+.spec b{color:var(--ink);font-weight:500}
+table{border-collapse:collapse;width:100%;font-size:14px;margin-top:16px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:700 12px/1.3 'Archivo',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+td:first-child{font:800 18px/1 'Archivo',sans-serif;color:var(--accent)}
+.table-wrap{overflow-x:auto}
+.reco{border:1px solid var(--line);border-left:4px solid var(--accent);padding:16px 20px;margin-top:22px;background:var(--panel)}
+.reco p{max-width:80ch}
+ol.next{padding-left:20px;max-width:80ch}
+ol.next li{margin-bottom:8px}
+/* svg classes */
+.ortho .shell{fill:var(--panel2);stroke:var(--ink);stroke-width:1.2}
+.ortho .shellc{fill:var(--panel2);stroke:var(--ink);stroke-width:1}
+.ortho .cutf{fill:var(--ink);fill-opacity:.22;stroke:var(--ink);stroke-width:1}
+.ortho .pcbg{fill:var(--pcb-dim);stroke:var(--pcb);stroke-width:.9;stroke-dasharray:4 3}
+.ortho .pcb{fill:var(--pcb);stroke:none}
+.ortho .comp{fill:var(--ghost);stroke:none}
+.ortho .compd{fill:none;stroke:var(--ghost);stroke-width:.9;stroke-dasharray:3 2}
+.ortho .cut{fill:var(--cut);fill-opacity:.16;stroke:var(--cut);stroke-width:1}
+.ortho .cutd{fill:none;stroke:var(--cut);stroke-width:1;stroke-dasharray:4 3}
+.ortho .slot{fill:none;stroke:var(--ink);stroke-width:2.4;stroke-linejoin:round;stroke-linecap:round}
+.ortho .screw{fill:var(--panel);stroke:var(--ink);stroke-width:1}
+.ortho .hid{fill:none;stroke:var(--ink);stroke-width:.8;stroke-dasharray:3 2;opacity:.75}
+.ortho .part{stroke:var(--ink);stroke-width:.8;stroke-dasharray:7 3;fill:none}
+.ortho .dim{stroke:var(--accent);stroke-width:.8;fill:none}
+.ortho .dimt{fill:var(--accent);font:500 10px 'IBM Plex Mono',monospace}
+.ortho .lbl{fill:var(--ink);font:500 10.5px 'Noto Sans SC',sans-serif}
+.ortho .lbl2{fill:var(--muted);font:400 9.5px 'Noto Sans SC',sans-serif}
+.ortho .lblc{fill:var(--cut);font:500 10px 'Noto Sans SC',sans-serif}
+.ortho .brass{fill:#c9a14a;stroke:var(--ink);stroke-width:.7}
+.ortho .gold{fill:#cfae4f;stroke:var(--ink);stroke-width:.7}
+.ortho .ax{stroke:var(--ink);stroke-width:.6;stroke-dasharray:8 3 2 3;opacity:.6}
+.iso .ld{stroke:var(--ink);stroke-width:1;fill:none}
+.iso .ldp{fill:var(--ink)}
+.iso .lb{fill:var(--ink);font:500 13px 'Noto Sans SC',sans-serif}
+.iso .lb2{fill:var(--muted);font:400 11px 'Noto Sans SC',sans-serif}
+@media (max-width:820px){
+  .fig-grid{grid-template-columns:1fr}
+  .notes{grid-template-columns:1fr}
+  h1{font-size:26px}
+  .letter{font-size:48px}
+}
+@media (prefers-reduced-motion:no-preference){ a:focus-visible{outline:2px solid var(--accent);outline-offset:2px} }
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.checks{display:grid;gap:0;border-top:1px solid var(--line);margin-top:16px}
+.check{display:grid;grid-template-columns:64px 1fr;gap:14px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14.5px;line-height:1.65}
+.check .ck{font:700 11px/1.2 'Archivo',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);padding-top:4px}
+.check div:last-child{max-width:80ch}
+.params{border-top:2px solid var(--line);padding-top:10px}
+.params h3{font-size:13px;letter-spacing:.06em;color:var(--muted)}
+table.kv{margin-top:6px;font-size:13.5px}
+table.kv td{padding:6px 8px;border-bottom:1px solid var(--line)}
+table.kv td:first-child{font:400 13.5px/1.5 'Noto Sans SC',sans-serif;color:var(--muted);width:40%}
+pre.cmd{background:var(--panel);border:1px solid var(--line);padding:12px 14px;font:13px/1.6 'IBM Plex Mono',monospace;overflow-x:auto;max-width:100%}
+details{border-top:1px solid var(--line);padding:10px 0}
+summary{cursor:pointer;font:700 15px/1.5 'Noto Sans SC',sans-serif}
+.ortho .deboss{fill:var(--muted);font:500 8px 'Archivo',sans-serif;letter-spacing:.04em}
+.ortho .debossB{fill:var(--muted);font:700 14px 'Archivo',sans-serif;letter-spacing:.06em}
+
+/* 3D viewport */
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start;margin-top:16px}
+.viewport{position:relative;aspect-ratio:4/3;min-height:340px;max-height:78vh;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
+.viewport canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+.viewport canvas:active{cursor:grabbing}
+.hud{position:absolute;display:flex;gap:6px;flex-wrap:wrap;pointer-events:none}
+.hud>*{pointer-events:auto}
+.hud.tl{top:10px;left:10px}
+.hud.tr{top:10px;right:10px;justify-content:flex-end}
+.hud.bl{left:10px;right:10px;bottom:10px;align-items:center;justify-content:flex-start}
+.btn{font:500 12.5px/1 'Noto Sans SC',sans-serif;padding:7px 10px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer}
+.btn:hover{color:var(--ink)}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700}
+.btn:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.slider{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);padding:6px 10px;font-size:12.5px;color:var(--muted)}
+.slider input{width:140px;accent-color:var(--accent)}
+.caption{font:500 12px/1.4 'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;color:var(--muted);background:var(--panel);border:1px solid var(--line);padding:6px 10px;margin-left:auto}
+.caption b{color:var(--ink);font-weight:500}
+.vpmsg{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:13px;padding:20px;text-align:center}
+.spec{background:var(--panel);border:1px solid var(--line);padding:16px 18px}
+.spec h3{font-size:12px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.spec ol{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.spec li{display:grid;gap:2px;padding:8px 10px;border-left:3px solid var(--line);font-size:13.5px;line-height:1.5;color:var(--muted)}
+.spec li b{color:var(--ink);font-weight:500}
+.spec li.on{border-left-color:var(--accent);background:var(--bg)}
+.spec li.on b{color:var(--accent)}
+.spec .hint{font-size:12.5px;color:var(--muted);margin:12px 0 0}
+@media (max-width:1000px){.stage{grid-template-columns:1fr}.viewport{max-height:none}}
+@media (max-width:540px){.hud.bl{flex-direction:column;align-items:stretch}.slider input{width:100%}.caption{margin-left:0}}
+
+/* Fig.1 PCB map colors (material colors, shared by both themes) */
+.ortho.map .chip{fill:#2b2f33}
+.ortho.map .swb{fill:#6a7076}.ortho.map .swc{fill:#454b51}
+.ortho.map .ledb{fill:#9be15d}
+.ortho.map .hdrb{fill:#1f2226}.ortho.map .pinc{fill:#c9a14a}
+.ortho.map .usbb{fill:#b9bfc5;stroke:#4a5056;stroke-width:.8}
+.ortho.map .smab{fill:#c3c8cc;stroke:#4a5056;stroke-width:.8}.ortho.map .smag{fill:#cfae4f;stroke:#4a5056;stroke-width:.8}
+.ortho.map .holeb{fill:var(--panel);stroke:#c9a14a;stroke-width:2}
+.ortho.map .lblw{fill:#fff;font:500 9.5px 'IBM Plex Mono',monospace}
+.ortho.map .lblw2{fill:rgba(255,255,255,.78);font:400 9px 'IBM Plex Mono',monospace}
+.ortho.map .compd{stroke:rgba(255,255,255,.55)}
+.iso .lb,.iso .lb2{paint-order:stroke;stroke:var(--panel);stroke-width:4px;stroke-linejoin:round}
+#fig-map svg{max-width:760px;margin:0 auto}
+#fig-stack svg{max-width:820px;margin:0 auto}
+</style>
+
+<div class="wrap">
+<header>
+  <p class="eyebrow">BLEhound · 3D-printed case · Variant A revised</p>
+  <h1>Tray + lid, screws enter from the bottom, only LEDs on the top face</h1>
+  <p class="lede">Changed per your three requirements: M3 countersunk from the bottom, only 4 LED holes on the top, inner cavity sized for the soldered pin-header height. During review I found 7 more things to fix; all are now in the drawings and the OpenSCAD source.</p>
+</header>
+
+<section id="conn">
+  <h2>Recomputed against the connector spec</h2>
+  <div class="checks">
+    <div class="check"><div class="ck">SMA</div><div><b>SMA-KWE external-thread inner-hole right-angle jack: overall 14.5, thread 8.5, body 6 × 6 × 9.2, pin 3.5, pin pitch 5.1 × 5.1 (matches the board’s 5.15 pads).</b>From the drawing: the Ø6.35 thread top is flush with the body top, so<b>axis is 9.2 − 3.2 = 6.0 above the board face</b>, not the 3.2 I earlier estimated for an ordinary right-angle jack. Body front face is 0.4 beyond the front pin row → 1.0 inside the board edge; thread extends past the board edge <span class="num">7.5</span>. Fix:<b>move the parting line from 7.0 to 6.0 (= axis)</b>, the three Ø7.4 holes are half-circle top and bottom, the board drops in flat and closes when the lid is on, sturdier than a U-slot; the 9.2-tall body leaves 0.8 in the 10.0 cavity.</div></div>
+    <div class="check"><div class="ck">Thread</div><div><b>Usable thread past the wall 5.0:</b>8.5 − 1.0 inside board − 0.5 clearance − 2.0 wall. The nut that comes with the jack is 2.2 thick; after tightening, 2.8 is left for the antenna’s inner nut (about 4 turns, enough). No nut also works — the hole already clamps the thread top and bottom and the screw locks the board; the nut only stiffens the wall.</div></div>
+    <div class="check"><div class="ck">USB-C</div><div><b>Cutout reduced from 13 × 7 to 9.8 × 4.0.</b>You measured the receptacle overhang past the board edge as 1.4, so the receptacle front face is only 2.5 − 1.4 = <span class="num">1.1</span>; the plug’s metal shell (8.3 × 2.6, length 6.5) fully enters the receptacle, the overmold stays outside the wall, and the cutout only needs to clear the receptacle body (8.94 × 3.26 + 0.4 per side). Add a 0.8 45° lead-in chamfer on the outside. There is still 2.4 of wall from the cutout top to the parting line — no longer a thin bridge.</div></div>
+    <div class="check"><div class="ck">Antenna</div><div>2.4G stub 5 cm right-angle antenna (SMA inner-thread inner-pin): the elbow in any direction clears the neighboring jack — the three holes are 23.2 apart and the elbow body is about 9 in diameter, just enough.</div></div>
+  </div>
+</section>
+
+<section id="changes">
+  <h2>Review conclusion: 10 changes</h2>
+  <p class="lede">The first three are your requirements; the rest are issues found and resolved while checking the original Variant A item by item.</p>
+  <div class="checks">
+    <div class="check"><div class="ck">Requirement</div><div><b>Screws moved to the bottom.</b>M3×12 flat-head countersunk from the tray bottom, through the Ø8 bosses and the PCB mounting holes, into M3 heat-set inserts at the lower end of the lid bosses. The top is clean; the foot pads are moved inward, clear of the screws.</div></div>
+    <div class="check"><div class="ck">Requirement</div><div><b>Only LEDs on the top face.</b>4 Ø2.2 holes (CH37/38/39/PWR) + engraved text. Buttons and SWD require opening the lid; the source keeps a <span class="mono">pin_holes</span> parameter, off by default.</div></div>
+    <div class="check"><div class="ck">Requirement</div><div><b>Leave room for the soldered pin headers.</b>8.5 above the pin header + 1.5 margin → cavity clear height <span class="num">10.0</span>; pin tails + solder joints below the board → standoff <span class="num">4.0</span>. Total height <span class="num">19.6</span>.</div></div>
+    <div class="check"><div class="ck">Issue 1</div><div><b>The SMA hole cannot be a full circle in the tray wall.</b>With the SMA-KWE axis at 6.0, the Ø7.4 hole spans 2.3–9.7 and necessarily crosses the parting line. So the parting line is placed on the axis: lower half in the tray, upper half in the lid; the board drops in flat and closes on assembly.</div></div>
+    <div class="check"><div class="ck">Issue 2</div><div><b>The USB-C receptacle overhangs the board edge by 1.4 and enters the rear wall by 0.9; the board cannot drop straight into a closed cutout.</b>Assembly changes to: insert the USB end into the cutout at an angle first (only 0.9 into the wall, a 5° tilt is enough), then lower the antenna end so the SMA thread drops into the lower half-circle. To avoid the tilt, open the cutout down to the parting line (it becomes 9.8 × 6.4).</div></div>
+    <div class="check"><div class="ck">Issue 3</div><div><b>An M3 countersink in the 2 mm floor leaves only 0.3 mm of material.</b>The countersink sits directly under the Ø8 boss, so the actual material is floor 2 + boss 4; a 1.5 countersink is fine. But the foot pads can no longer sit over the screws, so they move to (12,10)(58,10)(12,41)(58,41).</div></div>
+    <div class="check"><div class="ck">Issue 4</div><div><b>A Ø7 boss with an M3 heat-set insert (OD 4.6) has only 1.2 wall.</b>Boss changed to Ø8. Checked components within 7.5 mm of the four holes against the coordinate file: the nearest is C46 (0402) beside H1, 1.3 mm from the boss edge; the other three holes are clear.</div></div>
+    <div class="check"><div class="ck">Issue 5</div><div><b>The LED is 9 mm below the lid; the Ø2 hole is visible but dim, and the three channels bleed light.</b>Add a Ø4.6 light pipe under the lid, down to z=2.5 (LED height 0.7, adjacent button height 1.5, both clear). Brighter option: change the hole to Ø1.85 and insert a 12 mm clear 1.75 filament as a light guide.</div></div>
+    <div class="check"><div class="ck">Issue 6</div><div><b>Board corners vs. cavity fillets.</b>The PCB has square corners; cavity corner R1 with 0.5 per-side clearance, checked non-interfering (0.3 at the corner). The three ANT2 reserved positions are not slotted by default; to populate them set <span class="mono">ant2_slots=true</span> and reprint the tray.</div></div>
+    <div class="check"><div class="ck">Issue 7</div><div><b>Screw length.</b>Floor 2 + standoff 4 + board 1.6 = 7.6; M3×12 goes 4.4 mm into the insert (insert length 5, hole depth 6.5 for the screw tip). M3×14 also works, don’t exceed 14.</div></div>
+  </div>
+</section>
+
+<section id="view3d">
+  <h2>3D view and exploded animation</h2>
+  <p class="lede">Drag to rotate, scroll to zoom, right-drag to pan. “▶ Explode” plays the disassembly animation (screws back out → lid lifts → PCB lifts off, SMA nuts back out); the slider can stop anywhere manually. “Section” cuts at x = 45, the same position as the section drawing below.</p>
+  <div class="stage">
+    <div class="viewport" id="viewport">
+      <canvas id="gl" aria-label="3D render of the case"></canvas>
+      <div class="hud tl" role="group" aria-label="View">
+        <button class="btn" id="v-iso" aria-pressed="true">Isometric</button>
+        <button class="btn" id="v-top">Top</button>
+        <button class="btn" id="v-ant">Antenna end</button>
+        <button class="btn" id="v-usb">USB end</button>
+      </div>
+      <div class="hud tr" role="group" aria-label="Display">
+        <button class="btn" id="t-spin" aria-pressed="true">Auto-rotate</button>
+        <button class="btn" id="t-xray" aria-pressed="false">X-ray shell</button>
+        <button class="btn" id="t-clip" aria-pressed="false">Section</button>
+        <button class="btn" id="t-pcb" aria-pressed="true">PCB</button>
+        <button class="btn" id="t-dim" aria-pressed="true">Dimensions</button>
+      </div>
+      <div class="hud bl">
+        <button class="btn primary" id="b-explode">▶ Explode</button>
+        <label class="slider" for="explode">Explode <input type="range" id="explode" min="0" max="100" value="0"></label>
+        <div class="caption" id="caption"><b>Explode 0%</b> · Assembled</div>
+      </div>
+    </div>
+    <aside class="spec" id="spec3d">
+      <h3>Disassembly order (synced with the animation)</h3>
+      <ol>
+        <li class="on"><b>Assembled</b><span>Tray, PCB and lid clamped by 4 M3; SMA nuts locked outside the front wall</span></li>
+        <li><b>① Back out the 4 M3×12</b><span>Back out from the bottom countersinks, through the tray bosses, PCB mounting holes, and the heat-set inserts in the lid bosses</span></li>
+        <li><b>② Lift the lid</b><span>The 4 Ø8 bosses leave the PCB top; the 4 LED light pipes leave with the lid; the skirt clears the tray</span></li>
+        <li><b>③ Lift the PCB, back out the SMA nuts</b><span>Reassembly is the reverse: seat the board first (USB end angled into the cutout, antenna end lowered into the half-circle), close the lid over the upper half-circle, flip and drive the screws, then fit the nuts</span></li>
+      </ol>
+      <p class="hint">The model is generated from the same parameters as <span class="mono">blehound_case_A.scad</span> : 75 × 65 × 19.6, wall 2.0, boss Ø8, parting line 6.0 through the SMA axis, SMA hole Ø7.4, USB cutout 9.8 × 4.0.</p>
+    </aside>
+  </div>
+</section>
+
+<section id="figs">
+  <h2>Revised drawings</h2>
+  <div class="fig-grid">
+    <figure class="iso" id="iso-A2"></figure>
+    <div class="fig-col">
+      <figure id="top-A2"></figure>
+      <figure id="front-A2"></figure>
+      <figure id="rear-A2"></figure>
+    </div>
+  </div>
+  <figure id="sec-A2" class="wide"></figure>
+  <div class="fig-grid" style="margin-top:16px">
+    <figure id="bottom-A2"></figure>
+    <div class="params">
+      <h3>Key parameters (mm)</h3>
+      <table class="kv">
+        <tr><td>Outer</td><td class="num">75 × 65 × 19.6</td></tr>
+        <tr><td>Wall / floor / lid</td><td class="num">2.0 / 2.0 / 2.0</td></tr>
+        <tr><td>PCB clearance</td><td class="num">0.5 (cavity 71 × 61)</td></tr>
+        <tr><td>Standoff height (below board)</td><td class="num">4.0</td></tr>
+        <tr><td>Cavity clear height (above board)</td><td class="num">10.0</td></tr>
+        <tr><td>Parting line</td><td class="num">z = 6.0 (= SMA axis; board top face is 0)</td></tr>
+        <tr><td>Boss</td><td class="num">Ø8, 4 top and 4 bottom</td></tr>
+        <tr><td>SMA hole</td><td class="num">Ø7.4 ×3, axis z = 6.0, half-circle top and bottom</td></tr>
+        <tr><td>USB-C cutout</td><td class="num">9.8 × 4.0, z -0.37–3.63, corner 1.3, outer chamfer 0.8</td></tr>
+        <tr><td>LED hole / light pipe</td><td class="num">Ø2.2 / Ø4.6, pipe bottom z = 2.5</td></tr>
+        <tr><td>Lid inner lip</td><td class="num">height 1.5, thickness 1.2, clearance 0.2</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="bom">
+  <h2>Hardware BOM and assembly</h2>
+  <div class="notes">
+    <div class="note"><h3>Hardware</h3><ul><li>M3×12 flat-head (countersunk) screw ×4, stainless or black zinc</li><li>M3 heat-set insert ×4, M3×4×5 (OD 4.6), pilot hole Ø4.0 (some batches 4.2)</li><li>Ø8 × 1.5 silicone foot pad ×4</li><li>SMA nut (2.2 thick) + spring washer: comes with the connector, optional</li></ul></div>
+    <div class="note"><h3>Assembly order</h3><ul><li>Press the heat-set inserts into the lower end of the 4 lid bosses (iron 220 ℃, flush with the boss face)</li><li>Place the PCB into the tray: USB end first, angling the USB-C receptacle into the cutout, then lower the antenna end so the 3 SMA threads drop into the lower half-circle</li><li>Close the lid, mate the upper half-circle, seat the inner lip into the tray, align the bosses with the board holes</li><li>Flip the whole thing, drive the 4 M3×12 from the bottom; stick on the foot pads</li><li>Fit the SMA nuts (lock outside the wall, pressing the two shells together) and the antenna</li></ul></div>
+    <div class="note"><h3>Printing</h3><ul><li>Tray: opening up, no supports. USB cutout bridges 9.8 mm; SMA half-circle slots open upward</li><li>Lid: in the source <span class="mono">part="lid"</span> is pre-flipped, top face on the bed; bosses and light pipes point up; the three half-circles on the skirt open upward, no supports</li><li>PETG or PLA, layer 0.2, 3 walls, 4 top/bottom layers, 20% infill</li><li>Bosses and light pipes with diameter ≥ 4.6 print stably; the countersink is a 90° cone, no supports needed</li></ul></div>
+  </div>
+</section>
+
+<section id="files">
+  <h2>Files (rendered with OpenSCAD 2021.01)</h2>
+  <p>All under <span class="mono">hardware/case/</span>:</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>File</th><th>Contents</th><th>Size / notes</th></tr></thead>
+    <tbody>
+      <tr><td class="mono" style="font-size:13px;color:var(--ink)">blehound_tray.stl / .3mf</td><td>Tray, print orientation (opening up)</td><td class="num">75 × 65 × 13.6, 5460 faces, single solid</td></tr>
+      <tr><td class="mono" style="font-size:13px;color:var(--ink)">blehound_lid.stl / .3mf</td><td>Lid, pre-flipped (top face on the bed; bosses, light pipes, skirt up)</td><td class="num">75 × 65 × 12.0, 18996 faces, single solid</td></tr>
+      <tr><td class="mono" style="font-size:13px;color:var(--ink)">blehound_case_A.scad</td><td>Parametric source; edit the top parameter block and re-export</td><td>Coordinates come straight from the SMT coordinate file</td></tr>
+      <tr><td class="mono" style="font-size:13px;color:var(--ink)">preview_*.png</td><td>OpenSCAD renders: assembly, exploded, tray, lid print orientation</td><td>For checking</td></tr>
+      <tr><td class="mono" style="font-size:13px;color:var(--ink)">BLEhound_case_A_3D.html</td><td>Offline version of this page (with 3D animation, fetches three.js online)</td><td></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <pre class="cmd">"C:\Program Files\OpenSCAD\openscad.com" -o blehound_tray.stl -D "part=\"tray\"" blehound_case_A.scad
+"C:\Program Files\OpenSCAD\openscad.com" -o blehound_lid.stl  -D "part=\"lid\""  blehound_case_A.scad</pre>
+  <p>Slicing: layer 0.2, 3 walls, 4 top/bottom layers, 20% infill, PETG or PLA, neither part needs supports (USB cutout bridges 9.8 mm; the half-circles on the lid skirt open upward). Print once, test-fit with the board, then decide whether to nudge <span class="mono">clr</span>(0.5) or <span class="mono">lip_clr</span>(0.2) a notch.</p>
+</section>
+
+<section id="next">
+  <h2>Numbers still for you to check</h2>
+  <ol class="next">
+    <li><b>SMA body height.</b>Measured 9.2 from the spec drawing (axis 6.0); after soldering, caliper the thread center to the board face — 6.3 is also fine (the Ø7.4 hole leaves ±0.5).</li>
+    <li><b>USB-C receptacle overhang 1.4 changed as you said.</b>Any actual value between 1.0–1.8 works; the cutout needs no further change.</li>
+    <li><b>Pin-header type.</b>Computed for a standard 2.54 header: top 6 + body 2.5 = 8.5, tail 3.0 below (1.4 exposed below the board + solder). If you use a taller header, change <span class="mono">inner_h</span>.</li>
+  </ol>
+</section>
+
+<section id="ref">
+  <h2>Appendix: board interface map</h2>
+  <figure id="fig-map"></figure>
+</section>
+
+<section id="alt">
+  <h2>Appendix: early alternatives (B sandwich / C slide-sleeve / D upright dock)</h2>
+  <p class="lede">Dropped, kept for comparison. C’s retention chain is in the previous round of discussion; D can still be an accessory to the final A.</p>
+  <details><summary>B · Sandwich</summary>
+    <div class="fig-grid" style="margin-top:12px"><figure class="iso" id="iso-B"></figure><div class="fig-col"><figure id="top-B"></figure></div></div>
+    <figure id="sec-B" class="wide"></figure>
+  </details>
+  <details><summary>C · Slide-sleeve</summary>
+    <div class="fig-grid" style="margin-top:12px"><figure class="iso" id="iso-C"></figure><div class="fig-col"><figure id="top-C"></figure><figure id="front-C"></figure></div></div>
+    <figure id="sec-C" class="wide"></figure>
+  </details>
+  <details><summary>D · Upright dock (pairs with the final A)</summary>
+    <div class="fig-grid" style="margin-top:12px"><figure class="iso" id="iso-D"></figure><div class="fig-col"><figure id="front-D"></figure></div></div>
+  </details>
+</section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ===== Data: all from PickAndPlace / DXF (PCB bottom-left is the origin, mm) =====
+const PCB={W:70,D:60,T:1.6,
+  holes:[[4,4],[66,4],[4,47.095],[66,47.095]],
+  sma:[{x:6,pop:false,n:'J2'},{x:17.6,pop:true,n:'J1'},{x:29.2,pop:false,n:'J5'},{x:40.8,pop:true,n:'J4'},{x:52.4,pop:false,n:'J8'},{x:64,pop:true,n:'J7'}],
+  smaAxisZ:6.0, smaBody:{w:6,y0:53,y1:59,h:9.2}, smaBarrel:{r:3.175,y1:67.5}, smaNut:{r:4.6,y0:62.8,y1:65.0},   // SMA-KWE: body 6×6×9.2, thread 8.5, axis flush with body top
+  usb:{x:35,w:8.94,y0:-1.4,y1:5.95,h:3.26},   // measured overhang past board edge 1.4
+  hdr:[{x:23.933,n:'J3'},{x:45.408,n:'J6'},{x:66.429,n:'J9'}], hdrY:35.329, hdrW:5.08, hdrL:12.7, hdrBody:2.5, hdrPin:8.5,
+  sw:[{x:6.017,n:'SW2',f:'RST'},{x:15.44,n:'SW1',f:'BOOT'},{x:24.863,n:'SW4',f:'RST'},{x:45.336,n:'SW3',f:'BOOT'},{x:55.059,n:'SW6',f:'RST'},{x:64.782,n:'SW5',f:'BOOT'}], swY:18.915, swS:5.2, swH:1.5,
+  led:[{x:13.833,y:23.26,n:'D1',f:'CH37'},{x:34.436,y:24.022,n:'D2',f:'CH38'},{x:56.055,y:23.26,n:'D3',f:'CH39'},{x:44.883,y:7.202,n:'D4',f:'PWR'}],
+  nrf54:[{x:14.27},{x:35.762},{x:56.902}], nrf54Y:31.841,
+  nrf21:[{x:13.195},{x:34.56},{x:55.798}], nrf21Y:44.893,
+  hub:{x:35,y:18.857}
+};
+const ENC={c:0.5,t:2,tf:2,st:4.0,in:10.0,lid:2,R:3,zPart:6.0};   // parting line = SMA axis
+ENC.x0=-ENC.c-ENC.t; ENC.x1=PCB.W+ENC.c+ENC.t; ENC.y0=-ENC.c-ENC.t; ENC.y1=PCB.D+ENC.c+ENC.t;
+ENC.zFloor=-PCB.T-ENC.st-ENC.tf; ENC.zTop=ENC.in+ENC.lid; ENC.H=ENC.zTop-ENC.zFloor;
+const USBCUT={w:9.8,z0:-0.37,z1:3.63,r:1.3};
+const WIN={w:9,l:19}; // pin-header window
+const C_Y1=PCB.D+ENC.c; // Variant C tube antenna-end opening (board edge +0.5)
+const CAP_T=2;
+const COL={shell:'#7f95ad',pcb:'#2f7d4c',chip:'#2b2f33',sw:'#6a7076',hdr:'#1f2226',pin:'#c9a14a',usb:'#b9bfc5',sma:'#c3c8cc',gold:'#cfae4f',brass:'#c9a14a',led:'#9be15d',hole:'#1b1f22',screw:'#8a9097',ant:'#2a2d30'};
+const S=4;
+
+// ===== Color utilities =====
+function h2l(hex){const r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let h=0,s=0;const l=(mx+mn)/2;if(mx!==mn){const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);if(mx===r)h=(g-b)/d+(g<b?6:0);else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h/=6;}return[h,s,l];}
+function l2h(h,s,l){const f=(p,q,t)=>{if(t<0)t+=1;if(t>1)t-=1;if(t<1/6)return p+(q-p)*6*t;if(t<1/2)return q;if(t<2/3)return p+(q-p)*(2/3-t)*6;return p;};let r,g,b;if(s===0){r=g=b=l;}else{const q=l<.5?l*(1+s):l+s-l*s,p=2*l-q;r=f(p,q,h+1/3);g=f(p,q,h);b=f(p,q,h-1/3);}const x=v=>Math.round(v*255).toString(16).padStart(2,'0');return'#'+x(r)+x(g)+x(b);}
+function sh(hex,dl){const[h,s,l]=h2l(hex);return l2h(h,s,Math.min(1,Math.max(0,l+dl/100)));}
+
+// ===== Isometric engine (viewpoint at +x +y +z: shows +x, +y, top) =====
+const C30=Math.cos(Math.PI/6);
+const P=(x,y,z)=>[(x-y)*C30*S,((x+y)*0.5-z)*S];
+const F=(pts,fill,o={})=>Object.assign({pts,fill},o);
+const arc=(n,a0,a1)=>{const o=[];for(let i=0;i<=n;i++)o.push(a0+(a1-a0)*i/n);return o;};
+const circZ=(cx,cy,z,r,n=24)=>arc(n,0,2*Math.PI).slice(0,-1).map(a=>[cx+r*Math.cos(a),cy+r*Math.sin(a),z]);
+const circY=(cx,cz,y,r,n=24)=>arc(n,0,2*Math.PI).slice(0,-1).map(a=>[cx+r*Math.cos(a),y,cz+r*Math.sin(a)]);
+function box(x0,y0,z0,x1,y1,z1,c){return[
+  F([[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1]],sh(c,0)),
+  F([[x1,y0,z0],[x1,y1,z0],[x1,y1,z1],[x1,y0,z1]],sh(c,-14)),
+  F([[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]],sh(c,16))];}
+function trayBack(x0,y0,z0,x1,y1,z1,t,tf,c,openY=false){const yb=openY?y1:y1-t;return[
+  F([[x0+t,y0+t,z0+tf],[x1-t,y0+t,z0+tf],[x1-t,yb,z0+tf],[x0+t,yb,z0+tf]],sh(c,6)),
+  F([[x0+t,y0+t,z0+tf],[x0+t,yb,z0+tf],[x0+t,yb,z1],[x0+t,y0+t,z1]],sh(c,-14)),
+  F([[x0+t,y0+t,z0+tf],[x1-t,y0+t,z0+tf],[x1-t,y0+t,z1],[x0+t,y0+t,z1]],sh(c,0))];}
+function trayFront(x0,y0,z0,x1,y1,z1,t,c){return[
+  F([[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1]],sh(c,0)),
+  F([[x1,y0,z0],[x1,y1,z0],[x1,y1,z1],[x1,y0,z1]],sh(c,-14)),
+  {loops:[[[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]],[[x0+t,y0+t,z1],[x1-t,y0+t,z1],[x1-t,y1-t,z1],[x0+t,y1-t,z1]]],fill:sh(c,16)}];}
+function cylZ(cx,cy,z0,z1,r,c,n=24){const A=Math.PI/4,f=[];
+  const seg=(a0,a1,col)=>{const as=arc(Math.max(2,Math.round(n*(a1-a0)/(2*Math.PI))),a0,a1);const b=as.map(a=>[cx+r*Math.cos(a),cy+r*Math.sin(a),z0]);const t=as.map(a=>[cx+r*Math.cos(a),cy+r*Math.sin(a),z1]).reverse();f.push(F([...b,...t],col));};
+  seg(-A,A,sh(c,-14));seg(A,3*A,sh(c,0));f.push(F(circZ(cx,cy,z1,r,n),sh(c,16)));return f;}
+function cylY(cx,cz,y0,y1,r,c,n=24){const A=Math.PI/4,f=[];
+  const seg=(a0,a1,col)=>{const as=arc(Math.max(2,Math.round(n*(a1-a0)/(2*Math.PI))),a0,a1);const b=as.map(a=>[cx+r*Math.cos(a),y0,cz+r*Math.sin(a)]);const t=as.map(a=>[cx+r*Math.cos(a),y1,cz+r*Math.sin(a)]).reverse();f.push(F([...b,...t],col));};
+  seg(-A,A,sh(c,-14));seg(A,3*A,sh(c,10));f.push(F(circY(cx,cz,y1,r,n),sh(c,0)));return f;}
+const holeZ=(cx,cy,z,r)=>F(circZ(cx,cy,z,r),COL.hole);
+const holeY=(cx,cz,y,r)=>F(circY(cx,cz,y,r),COL.hole);
+const dashZ=(cx,cy,z,r)=>F(circZ(cx,cy,z,r),'none',{stroke:'currentColor',dash:'3 2',sw:1});
+const dashY=(cx,cz,y,r)=>F(circY(cx,cz,y,r),'none',{stroke:'currentColor',dash:'3 2',sw:1});
+
+function scene(){const items=[];return{
+  add(a){(Array.isArray(a)?a:[a]).forEach(f=>items.push(f));},
+  label(p,text,dx,dy,anchor='start',cls='lb'){items.push({label:1,p,text,dx,dy,anchor,cls});},
+  svg(aria,pad=26){
+    let bb=[1e9,1e9,-1e9,-1e9];const ext=(u,v)=>{bb[0]=Math.min(bb[0],u);bb[1]=Math.min(bb[1],v);bb[2]=Math.max(bb[2],u);bb[3]=Math.max(bb[3],v);};
+    const out=[];const r1=v=>v.toFixed(1);
+    for(const it of items){
+      if(it.label){const[u,v]=P(...it.p);const tx=u+it.dx,ty=v+it.dy;const dir=it.anchor==='end'?-1:1;const tw=it.text.length*10;
+        ext(u,v);ext(tx,ty);ext(tx+dir*(tw+14),ty-14);
+        out.push(`<polyline points="${r1(u)},${r1(v)} ${r1(tx)},${r1(ty)} ${r1(tx+dir*12)},${r1(ty)}" class="ld"/><circle cx="${r1(u)}" cy="${r1(v)}" r="2.2" class="ldp"/><text x="${r1(tx+dir*14)}" y="${r1(ty)}" dy="4" class="${it.cls}" text-anchor="${it.anchor}">${it.text}</text>`);continue;}
+      const loops=it.loops||[it.pts];
+      const d=loops.map(L=>{const pp=L.map(p=>P(...p));pp.forEach(([u,v])=>ext(u,v));return 'M'+pp.map(([u,v])=>r1(u)+','+r1(v)).join('L')+(it.open?'':'Z');}).join(' ');
+      out.push(`<path d="${d}" fill="${it.fill}"${it.loops?' fill-rule="evenodd"':''} stroke="${it.stroke||'var(--iso-edge)'}" stroke-width="${it.sw||0.7}"${it.dash?` stroke-dasharray="${it.dash}"`:''} stroke-linejoin="round" stroke-linecap="round"/>`);
+    }
+    const w=bb[2]-bb[0]+2*pad,h=bb[3]-bb[1]+2*pad;
+    return `<svg viewBox="${(bb[0]-pad).toFixed(0)} ${(bb[1]-pad).toFixed(0)} ${w.toFixed(0)} ${h.toFixed(0)}" role="img" aria-label="${aria}">${out.join('')}</svg>`;
+  }};}
+
+// PCB components (real coordinates)
+function pcbAsm(zo=0,yo=0,xo=0){
+  const z1=zo,z0=zo-PCB.T;const out=[...box(xo,yo,z0,xo+PCB.W,yo+PCB.D,z1,COL.pcb)];const parts=[];
+  const bx=(x,y,w,d,zb,zt,c,k)=>parts.push({k:k??(x+y),f:box(xo+x-w/2,yo+y-d/2,z1+zb,xo+x+w/2,yo+y+d/2,z1+zt,c)});
+  PCB.holes.forEach(([x,y])=>parts.push({k:-1e3,f:[holeZ(xo+x,yo+y,z1+0.01,1.6)]}));
+  PCB.nrf54.forEach(u=>bx(u.x,PCB.nrf54Y,6,6,0,0.9,COL.chip));
+  PCB.nrf21.forEach(u=>bx(u.x,PCB.nrf21Y,4,4,0,0.9,COL.chip));
+  bx(PCB.hub.x,PCB.hub.y,4,4,0,0.9,COL.chip);
+  PCB.sw.forEach(w=>{bx(w.x,PCB.swY,PCB.swS,PCB.swS,0,PCB.swH,COL.sw);parts.push({k:w.x+PCB.swY+0.001,f:[F(circZ(xo+w.x,yo+PCB.swY,z1+PCB.swH+0.01,1.5),sh(COL.sw,-22))]});});
+  PCB.led.forEach(l=>bx(l.x,l.y,1.6,0.8,0,0.7,COL.led));
+  PCB.hdr.forEach(h=>{bx(h.x,PCB.hdrY,PCB.hdrW,PCB.hdrL,0,PCB.hdrBody,COL.hdr);
+    for(let r=0;r<2;r++)for(let c=0;c<5;c++)bx(h.x-1.27+r*2.54,PCB.hdrY-5.08+c*2.54,0.64,0.64,PCB.hdrBody,PCB.hdrPin,COL.pin,h.x+PCB.hdrY+0.01+r*0.001+c*0.0001);});
+  const U=PCB.usb;parts.push({k:U.x+2,f:box(xo+U.x-U.w/2,yo+U.y0,z1,xo+U.x+U.w/2,yo+U.y1,z1+U.h,COL.usb)});
+  PCB.sma.filter(a=>a.pop).forEach(a=>{const B=PCB.smaBody;parts.push({k:a.x+56,f:[...box(xo+a.x-B.w/2,yo+B.y0,z1,xo+a.x+B.w/2,yo+B.y1,z1+B.h,COL.sma),...cylY(xo+a.x,z1+PCB.smaAxisZ,yo+B.y1,yo+PCB.smaBarrel.y1,PCB.smaBarrel.r,COL.gold)]});});
+  parts.sort((a,b)=>a.k-b.k).forEach(p=>out.push(...p.f));return out;}
+
+// Lid top-face features (z plane)
+function lidFeatures3D(zt,opts,xo=0,yo=0){const f=[];
+  PCB.led.forEach(l=>f.push(holeZ(xo+l.x,yo+l.y,zt,1)));
+  PCB.sw.forEach(w=>{if(w.f==='RST'&&opts.flaps){const x=xo+w.x,y=yo+PCB.swY;f.push(F([[x-3.5,y+4.5,zt],[x-3.5,y-4.5,zt],[x+3.5,y-4.5,zt],[x+3.5,y+4.5,zt]],'none',{open:true,stroke:COL.hole,sw:2.2}));}else f.push(holeZ(xo+w.x,yo+PCB.swY,zt,1.1));});
+  if(opts.windows)PCB.hdr.forEach(h=>{const x=xo+h.x,y=yo+PCB.hdrY;const pts=[[x-WIN.w/2,y-WIN.l/2,zt],[x+WIN.w/2,y-WIN.l/2,zt],[x+WIN.w/2,y+WIN.l/2,zt],[x-WIN.w/2,y+WIN.l/2,zt]];f.push(opts.windows==='solid'?F(pts,COL.hole):F(pts,'none',{stroke:'currentColor',dash:'3 2',sw:1}));});
+  return f;}
+
+// ---- Variant A exploded view ----
+function sceneA(){const s=scene(),E=ENC,c=COL.shell;
+  s.add(trayBack(E.x0,E.y0,E.zFloor,E.x1,E.y1,E.zPart,E.t,E.tf,c));
+  PCB.holes.forEach(([x,y])=>{s.add(cylZ(x,y,E.zFloor+E.tf,-PCB.T,3.5,c));s.add(holeZ(x,y,-PCB.T+0.01,1.6));});
+  s.add(trayFront(E.x0,E.y0,E.zFloor,E.x1,E.y1,E.zPart,E.t,c));
+  PCB.sma.forEach(a=>s.add(a.pop?holeY(a.x,PCB.smaAxisZ,E.y1,3.5):dashY(a.x,PCB.smaAxisZ,E.y1,3.5)));
+  const E1=20;s.add(pcbAsm(E1));
+  const E2=44;PCB.holes.forEach(([x,y])=>s.add(cylZ(x,y,E2,E2+E.in,3.5,c)));
+  s.add(box(E.x0+E.t+0.2,E.y0+E.t+0.2,E2+E.zPart-1.5,E.x1-E.t-0.2,E.y1-E.t-0.2,E2+E.zPart,sh(c,-4)));
+  s.add(box(E.x0,E.y0,E2+E.zPart,E.x1,E.y1,E2+E.zTop,c));
+  s.add(lidFeatures3D(E2+E.zTop,{flaps:true,windows:'dashed'}));
+  PCB.holes.forEach(([x,y])=>s.add(holeZ(x,y,E2+E.zTop,1.75)));
+  const E3=E2+E.zTop+7;PCB.holes.forEach(([x,y])=>{s.add(cylZ(x,y,E3,E3+13,1.5,COL.screw));s.add(cylZ(x,y,E3+13,E3+15,2.75,COL.screw));});
+  s.label([66,4,E3+15],'M3×16 countersunk ×4, driven from the top',40,-30);
+  s.label([PCB.hdr[1].x,PCB.hdrY,E2+E.zTop],'SWD window 9×19 (optional, off by default)',230,10);
+  s.label([PCB.led[1].x,PCB.led[1].y,E2+E.zTop],'LED light holes Ø2 ×4',-250,-40,'end');
+  s.label([PCB.sw[2].x,PCB.swY,E2+E.zTop],'RESET cantilever button ×3, BOOT is a Ø2.2 pinhole',-260,10,'end');
+  s.label([66,47.1,E2],'Lid boss Ø7 presses the PCB, lid has a 4.5-tall skirt',200,-30);
+  s.label([64,PCB.smaBarrel.y1,E1+PCB.smaAxisZ],'SMA ×3 extend 6.5 past the board edge',-160,50,'end');
+  s.label([PCB.hdr[2].x,PCB.hdrY,E1+PCB.hdrPin],'2×5 pin header ×3, height 8.5 (tallest part)',150,30);
+  s.label([40.8,E.y1,PCB.smaAxisZ],'Front-wall SMA holes Ø7 ×3, dashed = ANT2 reserved scoring',-60,70,'end');
+  s.label([66,4,-PCB.T],'Tray boss Ø7 + M3 heat-set insert',60,30);
+  s.label([E.x1,E.y1,E.zFloor],'Tray 75×65, wall 2.0',30,20);
+  return s.svg('Variant A closed-box exploded view: tray, PCB, lid, screws');}
+
+// ---- Variant B exploded view ----
+function sceneB(){const s=scene(),c=COL.shell;const x0=-3,x1=PCB.W+3,y0=-3,y1=PCB.D+3;
+  const zb0=-(PCB.T+6+3),zb1=zb0+3;
+  s.add(box(x0,y0,zb0,x1,y1,zb1,c));
+  PCB.holes.forEach(([x,y])=>s.add(cylZ(x,y,zb1,zb1+6,2.75,COL.brass,6)));
+  const E1=16;s.add(pcbAsm(E1));
+  PCB.holes.forEach(([x,y])=>s.add(cylZ(x,y,E1,E1+7,2.75,COL.brass,6)));
+  const E2=40;s.add(box(x0,y0,E2+7,x1,y1,E2+10,c));
+  s.add(lidFeatures3D(E2+10,{flaps:false,windows:'solid'}));
+  PCB.holes.forEach(([x,y])=>s.add(holeZ(x,y,E2+10,1.75)));
+  const E3=E2+10+7;PCB.holes.forEach(([x,y])=>{s.add(cylZ(x,y,E3,E3+6,1.5,COL.screw));s.add(cylZ(x,y,E3+6,E3+8,2.75,COL.screw));});
+  s.label([66,4,E3+8],'M3×6 ×4',40,-24);
+  s.label([PCB.hdr[1].x,PCB.hdrY,E2+10],'Pin-header window 9×19 ×3 (real openings, header protrudes 1.5)',-120,-70,'end');
+  s.label([PCB.sw[1].x,PCB.swY,E2+10],'Button pinhole Ø2.2 ×6, LED hole Ø2 ×4',-60,60,'end');
+  s.label([66,47.1,E1+7],'M3 hex standoff 7 mm ×4 (header 8.5 pokes through the window)',60,0);
+  s.label([64,PCB.smaBarrel.y1,E1+PCB.smaAxisZ],'SMA extends straight past the board, no wall, no hole',40,34);
+  s.label([66,4,zb1+6],'M3 hex standoff 6 mm ×4 (pin-tail space)',60,20);
+  s.label([x1,y1,zb0],'Base plate 76×66×3, countersunk M3×6 from the bottom',30,16);
+  return s.svg('Variant B sandwich exploded view: base plate, standoffs, PCB, standoffs, top plate');}
+
+// ---- Variant C exploded view (along the push-in direction) ----
+function sceneC(){const s=scene(),E=ENC,c=COL.shell;const zT=E.zTop,zF=E.zFloor,t=E.t;
+  // Tube: USB end closed, antenna end open
+  s.add(trayBack(E.x0,E.y0,zF,E.x1,C_Y1,zT-t,t,E.tf,c,true));
+  // USB port on the far inner wall (light-transmitting)
+  const U=PCB.usb;s.add(F([[U.x-USBCUT.w/2,E.y0+t,USBCUT.z0],[U.x+USBCUT.w/2,E.y0+t,USBCUT.z0],[U.x+USBCUT.w/2,E.y0+t,USBCUT.z1],[U.x-USBCUT.w/2,E.y0+t,USBCUT.z1]],'var(--bg)'));
+  // Left inner-wall rails (top and bottom)
+  const rx=E.x0+t;s.add(box(rx,E.y0+t,-PCB.T-0.2-1.2,rx+1,C_Y1,-PCB.T-0.2,sh(c,-8)));s.add(box(rx,E.y0+t,0.2,rx+1,C_Y1,1.4,sh(c,-8)));
+  // Outer surfaces: +x face, top (with lid features), antenna-end ring face
+  s.add(F([[E.x1,E.y0,zF],[E.x1,C_Y1,zF],[E.x1,C_Y1,zT],[E.x1,E.y0,zT]],sh(c,-14)));
+  s.add(F([[E.x0,E.y0,zT],[E.x1,E.y0,zT],[E.x1,C_Y1,zT],[E.x0,C_Y1,zT]],sh(c,16)));
+  s.add(lidFeatures3D(zT,{flaps:true,windows:'dashed'}));
+  s.add({loops:[[[E.x0,C_Y1,zF],[E.x1,C_Y1,zF],[E.x1,C_Y1,zT],[E.x0,C_Y1,zT]],[[E.x0+t,C_Y1,zF+E.tf],[E.x1-t,C_Y1,zF+E.tf],[E.x1-t,C_Y1,zT-t],[E.x0+t,C_Y1,zT-t]]],fill:sh(c,0)});
+  // Rail cross-sections on the end face
+  [[E.x0+t,E.x0+t+1],[E.x1-t-1,E.x1-t]].forEach(([a,b])=>{[[-PCB.T-1.4,-PCB.T-0.2],[0.2,1.4]].forEach(([za,zb])=>s.add(F([[a,C_Y1,za],[b,C_Y1,za],[b,C_Y1,zb],[a,C_Y1,zb]],sh(c,-8))));});
+  // PCB outside the tube (exploded along +y)
+  const EY=70;s.add(pcbAsm(0,EY));
+  // End cap
+  const cy=EY+PCB.D+12;s.add(box(E.x0,cy,zF,E.x1,cy+CAP_T,zT,c));
+  PCB.sma.forEach(a=>s.add(a.pop?holeY(a.x,PCB.smaAxisZ,cy+CAP_T,3.3):dashY(a.x,PCB.smaAxisZ,cy+CAP_T,3.3)));
+  // Nut
+  PCB.sma.filter(a=>a.pop).forEach(a=>s.add(cylY(a.x,PCB.smaAxisZ,cy+6,cy+8.4,PCB.smaNut.r,COL.brass,6)));
+  s.label([64,cy+8.4,PCB.smaAxisZ],'SMA nut ×3 locks the end cap = locks the PCB',30,26);
+  s.label([17.6,cy+CAP_T,PCB.smaAxisZ],'End cap 75×18.6×2.0, hole Ø6.6',-40,50,'end');
+  s.label([35,EY,-PCB.T],'PCB pushes in from the antenna end along the rails →',-60,40,'end');
+  s.label([E.x0+t+1,C_Y1,0.8],'Top and bottom rails each 1.0 wide, 1.2 tall, gripping a 1.8 gap',-40,-70,'end');
+  s.label([U.x,E.y0+t,USBCUT.z1],'USB-C port 13×7 in the closed USB-end wall',-40,-80,'end');
+  s.label([PCB.sw[2].x,PCB.swY,zT],'Top: buttons / LED / optional SWD window',40,-50);
+  s.label([E.x1,E.y0,zT],'Tube 75×63×18.6, printed upright',40,-10);
+  return s.svg('Variant C slide-sleeve exploded view: square tube, rails, PCB, end cap, SMA nuts');}
+
+// ---- Variant D upright dock ----
+function sceneD(){const s=scene(),c=COL.shell;
+  const BX=110,BY=70;s.add(box(0,0,0,BX,BY,6,sh(c,-6)));
+  s.add(box(15.5,20,6,94.5,50,34,sh(c,-6)));
+  s.add(F([[17.2,25.2,34],[92.8,25.2,34],[92.8,44.8,34],[17.2,44.8,34]],COL.hole));
+  s.add(F([[94.5,28,6],[94.5,36,6],[94.5,36,16],[94.5,28,16]],COL.hole));
+  // Upright box: tray at y 25.4..39.5, lid to 44
+  const bx0=17.5,bx1=92.5,by0=25.2,by1=44.8,bz0=34,bz1=99;
+  s.add(box(bx0,by0,bz0,bx1,by1,bz1,c));
+  // Parting line
+  s.add(F([[bx1,39.8,bz0],[bx1,39.8,bz1]],'none',{open:true,stroke:'rgba(0,0,0,.45)',sw:1}));
+  s.add(F([[bx0,39.8,bz1],[bx1,39.8,bz1]],'none',{open:true,stroke:'rgba(0,0,0,.45)',sw:1}));
+  // Lid features mapped to the +y face: x→x, y_pcb→z
+  const mx=x=>bx0+2.5+x,mz=y=>bz0+2.5+y;
+  PCB.led.forEach(l=>s.add(holeY(mx(l.x),mz(l.y),by1,1)));
+  PCB.sw.forEach(w=>{if(w.f==='RST'){const x=mx(w.x),z=mz(PCB.swY);s.add(F([[x-3.5,by1,z+4.5],[x-3.5,by1,z-4.5],[x+3.5,by1,z-4.5],[x+3.5,by1,z+4.5]],'none',{open:true,stroke:COL.hole,sw:2.2}));}else s.add(holeY(mx(w.x),mz(PCB.swY),by1,1.1));});
+  PCB.holes.forEach(([x,y])=>{s.add(F(circY(mx(x),mz(y),by1,2.75),sh(COL.screw,0)));s.add(F(circY(mx(x),mz(y),by1+0.01,1.2),sh(COL.screw,-25)));});
+  // Top-face SMA + antenna
+  PCB.sma.forEach(a=>{const x=mx(a.x),y=by0+7.6+PCB.smaAxisZ;if(!a.pop){s.add(dashZ(x,y,bz1,3.5));return;}
+    s.add(holeZ(x,y,bz1,3.5));s.add(cylZ(x,y,bz1,bz1+2.4,PCB.smaNut.r,COL.brass,6));s.add(cylZ(x,y,bz1+2.4,bz1+5,3.15,COL.gold));s.add(cylZ(x,y,bz1+5,bz1+12,4.6,COL.ant));s.add(cylZ(x,y,bz1+12,bz1+52,3.6,COL.ant));});
+  s.label([mx(64),by0+7.6+PCB.smaAxisZ,bz1+52],'2.4 GHz whip antenna ×3 pointing up',30,-10);
+  s.label([mx(PCB.led[2].x),by1,mz(PCB.led[2].y)],'LED and buttons face the user',60,20);
+  s.label([mx(4),by1,mz(47.1)],'Box (Variant A or C) plugged in upright',-30,-30,'end');
+  s.label([55,44.8,34],'Slot 75.6×20.2, depth 12 (can tilt back 10°)',-40,-24,'end');
+  s.label([94.5,32,11],'Cable channel 8×10, the USB-C plug turns inside the receptacle',36,20);
+  s.label([BX,BY,0],'Dock 110×70×34',20,14);
+  return s.svg('Variant D upright dock: box plugged in upright, antenna up');}
+
+// ===== Orthographic views =====
+function ortho(x0,y0,w,h,aria,body){return `<svg viewBox="${x0} ${y0} ${w} ${h}" role="img" aria-label="${aria}" class="ortho">${body}</svg>`;}
+const f1=v=>(+v).toFixed(1);
+function rectPx(x,y,w,h,cls,rx=0){return `<rect x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}"${rx?` rx="${f1(rx)}"`:''} class="${cls}"/>`;}
+function dimH(xa,xb,y,text,cls='dim'){const m=(xa+xb)/2;return `<g class="${cls}"><line x1="${f1(xa)}" y1="${f1(y)}" x2="${f1(xb)}" y2="${f1(y)}"/><line x1="${f1(xa)}" y1="${f1(y-4)}" x2="${f1(xa)}" y2="${f1(y+4)}"/><line x1="${f1(xb)}" y1="${f1(y-4)}" x2="${f1(xb)}" y2="${f1(y+4)}"/></g><text class="dimt" x="${f1(m)}" y="${f1(y-3)}" text-anchor="middle">${text}</text>`;}
+function dimV(x,ya,yb,text,side=1){const m=(ya+yb)/2;return `<g class="dim"><line x1="${f1(x)}" y1="${f1(ya)}" x2="${f1(x)}" y2="${f1(yb)}"/><line x1="${f1(x-4)}" y1="${f1(ya)}" x2="${f1(x+4)}" y2="${f1(ya)}"/><line x1="${f1(x-4)}" y1="${f1(yb)}" x2="${f1(x+4)}" y2="${f1(yb)}"/></g><text class="dimt" x="${f1(x+side*6)}" y="${f1(m)}" dy="3.5" text-anchor="${side>0?'start':'end'}">${text}</text>`;}
+const txt=(x,y,t,cls='lbl',anchor='start',dy=0)=>`<text class="${cls}" x="${f1(x)}" y="${f1(y)}" text-anchor="${anchor}" dy="${dy}">${t}</text>`;
+
+// PCB ghost in the top view (PCB coordinate → pixel mapping supplied by the caller)
+function pcbGhost(X,Y,s,solid=false){const o=[];const cls=solid?'comp':'comp';
+  o.push(`<rect x="${f1(X(0))}" y="${f1(Y(PCB.D))}" width="${f1(PCB.W*s)}" height="${f1(PCB.D*s)}" class="pcbg"/>`);
+  const r=(x,y,w,d,c=cls)=>o.push(rectPx(X(x-w/2),Y(y+d/2),w*s,d*s,c));
+  PCB.nrf54.forEach(u=>r(u.x,PCB.nrf54Y,6,6));PCB.nrf21.forEach(u=>r(u.x,PCB.nrf21Y,4,4));r(PCB.hub.x,PCB.hub.y,4,4);
+  PCB.sw.forEach(w=>r(w.x,PCB.swY,5.2,5.2));PCB.led.forEach(l=>r(l.x,l.y,1.6,0.8));
+  PCB.hdr.forEach(h=>r(h.x,PCB.hdrY,PCB.hdrW,PCB.hdrL));
+  const U=PCB.usb;o.push(rectPx(X(U.x-U.w/2),Y(U.y1),U.w*s,(U.y1-U.y0)*s,cls));
+  PCB.sma.forEach(a=>{const B=PCB.smaBody;if(a.pop){o.push(rectPx(X(a.x-B.w/2),Y(B.y1),B.w*s,(B.y1-B.y0)*s,cls));o.push(rectPx(X(a.x-PCB.smaBarrel.r),Y(PCB.smaBarrel.y1),2*PCB.smaBarrel.r*s,(PCB.smaBarrel.y1-B.y1)*s,cls));}else o.push(rectPx(X(a.x-B.w/2),Y(PCB.smaBarrel.y1),B.w*s,(PCB.smaBarrel.y1-B.y0)*s,'compd'));});
+  PCB.holes.forEach(([x,y])=>o.push(`<circle cx="${f1(X(x))}" cy="${f1(Y(y))}" r="${f1(1.6*s)}" class="compd"/>`));
+  return o.join('');}
+
+// ---- Fig. 1: PCB interface map ----
+function pcbMap(){const s=6,ox=72,oy=70;const X=x=>ox+x*s,Y=y=>oy+(PCB.D+8-y)*s;const o=[];
+  o.push(rectPx(X(0),Y(PCB.D),PCB.W*s,PCB.D*s,'pcb'));
+  const r=(x,y,w,d,c)=>o.push(rectPx(X(x-w/2),Y(y+d/2),w*s,d*s,c));
+  PCB.nrf54.forEach(u=>r(u.x,PCB.nrf54Y,6,6,'chip'));PCB.nrf21.forEach(u=>r(u.x,PCB.nrf21Y,4,4,'chip'));r(PCB.hub.x,PCB.hub.y,4,4,'chip');
+  PCB.sw.forEach(w=>{r(w.x,PCB.swY,5.2,5.2,'swb');o.push(`<circle cx="${f1(X(w.x))}" cy="${f1(Y(PCB.swY))}" r="${f1(1.5*s)}" class="swc"/>`);o.push(txt(X(w.x),Y(PCB.swY)+4.6*s,w.f,'lblw','middle',3));});
+  PCB.led.forEach(l=>{r(l.x,l.y,1.6,0.8,'ledb');o.push(txt(X(l.x)+1.4*s,Y(l.y),l.f,'lblw','start',3.5));});
+  PCB.hdr.forEach(h=>{r(h.x,PCB.hdrY,PCB.hdrW,PCB.hdrL,'hdrb');for(let rr=0;rr<2;rr++)for(let c=0;c<5;c++)o.push(`<circle cx="${f1(X(h.x-1.27+rr*2.54))}" cy="${f1(Y(PCB.hdrY-5.08+c*2.54))}" r="${f1(0.5*s)}" class="pinc"/>`);o.push(txt(X(h.x),Y(PCB.hdrY-8.2),h.n,'lblw','middle'));});
+  const U=PCB.usb;o.push(rectPx(X(U.x-U.w/2),Y(U.y1),U.w*s,(U.y1-U.y0)*s,'usbb'));o.push(txt(X(U.x),Y(U.y1+1.2),'USB-C','lblw','middle'));
+  PCB.sma.forEach(a=>{const B=PCB.smaBody;if(a.pop){o.push(rectPx(X(a.x-B.w/2),Y(B.y1),B.w*s,(B.y1-B.y0)*s,'smab'));o.push(rectPx(X(a.x-PCB.smaBarrel.r),Y(PCB.smaBarrel.y1),2*PCB.smaBarrel.r*s,(PCB.smaBarrel.y1-B.y1)*s,'smag'));o.push(txt(X(a.x),Y(B.y0-1.2),a.n,'lblw','middle',3));}else{o.push(rectPx(X(a.x-B.w/2),Y(PCB.smaBarrel.y1),B.w*s,(PCB.smaBarrel.y1-B.y0)*s,'compd'));o.push(txt(X(a.x),Y(B.y0-1.2),a.n+' reserved','lblw2','middle',3));}});
+  PCB.holes.forEach(([x,y])=>{o.push(`<circle cx="${f1(X(x))}" cy="${f1(Y(y))}" r="${f1(1.6*s)}" class="holeb"/>`);o.push(txt(X(x)+(x<35?2.3*s:-2.3*s),Y(y),`(${x}, ${y.toFixed(1).replace('.0','')})`,'lblw2',x<35?'start':'end',3.5));});
+  // Dimensions
+  o.push(dimH(X(0),X(PCB.W),Y(-4),'70'));o.push(dimV(X(PCB.W)+3.5*s,Y(PCB.D),Y(0),'60'));
+  o.push(dimH(X(4),X(66),Y(-8.5),'62 (hole pitch)'));o.push(dimV(X(0)-3*s,Y(47.095),Y(4),'43.1',-1));
+  o.push(dimV(X(0)-3*s,Y(60),Y(47.095),'12.9',-1));
+  o.push(dimH(X(17.6),X(40.8),Y(PCB.smaBarrel.y1+2.5),'23.2'));o.push(dimH(X(40.8),X(64),Y(PCB.smaBarrel.y1+2.5),'23.2'));
+  o.push(dimV(X(PCB.W)+3.5*s,Y(PCB.smaBarrel.y1),Y(PCB.D),'6.5'));
+  o.push(txt(X(35),Y(PCB.D+13),'Antenna side: 6 SMA positions, pitch 11.6, 3 populated','lbl','middle'));
+  o.push(txt(X(35),Y(-13),'USB side: USB-C centered, 1.0 past the board edge','lbl','middle'));
+  o.push(txt(X(PCB.W)+9*s,Y(30),'Right side: J9 pin-header body','lbl2','start'));o.push(txt(X(PCB.W)+9*s,Y(30)+12,'1.0 from the board edge','lbl2','start'));
+  return `<svg viewBox="0 0 ${ox+PCB.W*s+160} ${oy+ (PCB.D+8+16)*s+10}" role="img" aria-label="PCB interface map: SMA, USB-C, headers, buttons, LEDs, mounting holes in real coordinates" class="ortho map">${o.join('')}</svg>`;}
+
+// ---- Top view (Variant A / C / B) ----
+function topView(kind){const s=S;const E=ENC;const x0=kind==='B'?-3:E.x0,x1=kind==='B'?PCB.W+3:E.x1,y0=kind==='B'?-3:E.y0,y1=kind==='B'?PCB.D+3:(kind==='C'?C_Y1+CAP_T:E.y1);
+  const ox=30,oy=40;const X=x=>ox+(x-x0)*s,Y=y=>oy+(y1-y)*s;const o=[];
+  o.push(rectPx(X(x0),Y(y1),(x1-x0)*s,(y1-y0)*s,'shell',E.R*s));
+  if(kind==='C')o.push(`<line x1="${f1(X(x0))}" y1="${f1(Y(C_Y1))}" x2="${f1(X(x1))}" y2="${f1(Y(C_Y1))}" class="part"/>`);
+  o.push(pcbGhost(X,Y,s));
+  // Lid features
+  PCB.led.forEach(l=>o.push(`<circle cx="${f1(X(l.x))}" cy="${f1(Y(l.y))}" r="${f1(1*s)}" class="cut"/>`));
+  PCB.sw.forEach(w=>{if(w.f==='RST'&&kind!=='B'){const x=X(w.x),y=Y(PCB.swY);o.push(`<polyline points="${f1(x-3.5*s)},${f1(y-4.5*s)} ${f1(x-3.5*s)},${f1(y+4.5*s)} ${f1(x+3.5*s)},${f1(y+4.5*s)} ${f1(x+3.5*s)},${f1(y-4.5*s)}" class="slot"/>`);o.push(`<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(1.5*s)}" class="hid"/>`);}else o.push(`<circle cx="${f1(X(w.x))}" cy="${f1(Y(PCB.swY))}" r="${f1(1.1*s)}" class="cut"/>`);});
+  PCB.hdr.forEach(h=>o.push(rectPx(X(h.x-WIN.w/2),Y(PCB.hdrY+WIN.l/2),WIN.w*s,WIN.l*s,kind==='B'?'cut':'cutd')));
+  if(kind!=='C')PCB.holes.forEach(([x,y])=>{o.push(`<circle cx="${f1(X(x))}" cy="${f1(Y(y))}" r="${f1(2.75*s)}" class="screw"/>`);o.push(`<line x1="${f1(X(x)-1.6*s)}" y1="${f1(Y(y))}" x2="${f1(X(x)+1.6*s)}" y2="${f1(Y(y))}" class="dim" style="stroke:var(--ink)"/>`);});
+  // Labels
+  PCB.led.filter(l=>l.f!=='PWR').forEach(l=>o.push(txt(X(l.x)+1.6*s,Y(l.y),l.f,'lbl2','start',3.5)));
+  o.push(txt(X(PCB.led[3].x)+1.8*s,Y(PCB.led[3].y),'PWR · LED holes Ø2 ×4','lblc','start',3.5));
+  o.push(txt(X(PCB.sw[1].x)+10,Y(PCB.swY)+36,kind==='B'?'Pinhole Ø2.2 ×6':'RST cantilever / BOOT pinhole','lblc','middle'));
+  o.push(txt(X(PCB.hdr[1].x),Y(PCB.hdrY+WIN.l/2)-5,kind==='B'?'Pin-header window 9×19 ×3':'SWD window ×3 (optional)','lblc','middle'));
+  o.push(dimH(X(x0),X(x1),Y(y0)+16,f1(x1-x0)));o.push(dimV(X(x1)+14,Y(y1),Y(y0),f1(y1-y0)));
+  const W=(x1-x0)*s+ox+50,H=(y1-y0)*s+oy+30;
+  return ortho(0,0,W,H,`Variant ${kind} top view: lid openings relative to the PCB`,o.join(''));}
+
+// ---- Front view (antenna end) ----
+function frontView(kind){const s=S,E=ENC;const ox=64,oy=30;const X=x=>ox+(x-E.x0)*s,Z=z=>oy+(E.zTop-z)*s;const o=[];
+  o.push(rectPx(X(E.x0),Z(E.zTop),(E.x1-E.x0)*s,E.H*s,'shell',E.R*s));
+  if(kind==='A')o.push(`<line x1="${f1(X(E.x0))}" y1="${f1(Z(E.zPart))}" x2="${f1(X(E.x1))}" y2="${f1(Z(E.zPart))}" class="part"/>`);
+  o.push(`<line x1="${f1(X(E.x0))}" y1="${f1(Z(0))}" x2="${f1(X(E.x1))}" y2="${f1(Z(0))}" class="ax"/>`);
+  o.push(txt(X(E.x1)+4,Z(0),'PCB top face','lbl2','start',3));
+  const r=kind==='C'?3.3:3.5;
+  PCB.sma.forEach(a=>{o.push(`<circle cx="${f1(X(a.x))}" cy="${f1(Z(PCB.smaAxisZ))}" r="${f1(r*s)}" class="${a.pop?'cut':'cutd'}"/>`);if(a.pop)o.push(`<circle cx="${f1(X(a.x))}" cy="${f1(Z(PCB.smaAxisZ))}" r="${f1(PCB.smaBarrel.r*s)}" class="gold"/>`);});
+  if(kind==='C')[E.x0+3.2,E.x1-3.2].forEach(x=>o.push(`<circle cx="${f1(X(x))}" cy="${f1(Z(E.zFloor+3.2))}" r="${f1(1.1*s)}" class="cut"/>`));
+  o.push(dimH(X(17.6),X(40.8),Z(E.zTop)-8,'23.2'));o.push(dimH(X(40.8),X(64),Z(E.zTop)-8,'23.2'));
+  o.push(dimV(X(E.x1)+64,Z(PCB.smaAxisZ),Z(E.zFloor),'10.3'));
+  o.push(dimV(X(E.x0)-14,Z(E.zTop),Z(E.zFloor),'18.6',-1));
+  o.push(txt(X(6),Z(E.zFloor)+14,kind==='A'?'Ø7 ×3 through holes, ANT2 positions scored 0.6':'End cap Ø6.6 ×3 + M2 ×2','lblc','start'));
+  if(kind==='A')o.push(txt(X(E.x1)+4,Z(E.zPart),'Parting line z=7','lbl2','start',-3));
+  return ortho(0,0,(E.x1-E.x0)*s+ox+110,E.H*s+oy+30,`Variant ${kind} front view (antenna end): SMA hole positions`,o.join(''));}
+
+// ---- Rear view (USB end, x-mirrored) ----
+function rearView(){const s=S,E=ENC;const ox=64,oy=30;const X=x=>ox+(E.x1-x)*s,Z=z=>oy+(E.zTop-z)*s;const o=[];
+  o.push(rectPx(X(E.x1),Z(E.zTop),(E.x1-E.x0)*s,E.H*s,'shell',E.R*s));
+  o.push(`<line x1="${f1(X(E.x1))}" y1="${f1(Z(E.zPart))}" x2="${f1(X(E.x0))}" y2="${f1(Z(E.zPart))}" class="part"/>`);
+  o.push(`<line x1="${f1(X(E.x1))}" y1="${f1(Z(0))}" x2="${f1(X(E.x0))}" y2="${f1(Z(0))}" class="ax"/>`);
+  const U=PCB.usb;o.push(rectPx(X(U.x+USBCUT.w/2+0.8),Z(USBCUT.z1+0.8),(USBCUT.w+1.6)*s,(USBCUT.z1-USBCUT.z0+1.6)*s,'cutd',2*s));o.push(rectPx(X(U.x+USBCUT.w/2),Z(USBCUT.z1),USBCUT.w*s,(USBCUT.z1-USBCUT.z0)*s,'cut',USBCUT.r*s));
+  o.push(rectPx(X(U.x+U.w/2),Z(U.h),U.w*s,U.h*s,'hid',1*s));
+  o.push(dimH(X(U.x+USBCUT.w/2),X(U.x-USBCUT.w/2),Z(E.zTop)-8,'9.8'));
+  o.push(dimV(X(E.x0)+34,Z(USBCUT.z1),Z(USBCUT.z0),'4.0'));
+  o.push(dimV(X(E.x0)+34,Z(USBCUT.z0),Z(E.zFloor),'7.2'));
+  o.push(txt(X(E.x1),Z(E.zFloor)+14,'USB-C cutout 9.8×4.0 (receptacle 8.94×3.26 + 0.4 per side), outer 0.8 chamfer (dashed)','lblc','start'));
+  o.push(txt(X(E.x0)+4,Z(E.zTop)+10,'Seen from behind (x-mirrored)','lbl2','end'));
+  return ortho(0,0,(E.x1-E.x0)*s+ox+110,E.H*s+oy+30,'Variant A rear view (USB end): USB-C cutout',o.join(''));}
+
+// ---- Section (YZ plane, x=45, looking toward -x) ----
+function sectionView(kind){const s=6,E=ENC;const ox=30,oy=30;
+  const yA=E.y0-1,yB=E.y1+7;const Xf=y=>ox+(y-yA)*s,Z=z=>oy+(E.zTop+2-z)*s;const o=[];
+  const R=(ya,yb,za,zb,cls)=>o.push(rectPx(Xf(ya),Z(zb),(yb-ya)*s,(zb-za)*s,cls));
+  if(kind==='B'){
+    const zb0=-(PCB.T+6+3);const y0=-3,y1=PCB.D+3;
+    R(y0,y1,zb0,zb0+3,'cutf');R(y0,y1,7,10,'cutf');
+    // Window cutout: cover with background color over y 25.8..44.8
+    R(PCB.hdrY-WIN.l/2,PCB.hdrY+WIN.l/2,7,10,'cut');
+    [4,47.095].forEach(y=>{R(y-2.75,y+2.75,zb0+3,-PCB.T,'hid');R(y-2.75,y+2.75,0,7,'hid');});
+    R(0,PCB.D,-PCB.T,0,'pcb');
+    const h=PCB.hdr[1];R(PCB.hdrY-PCB.hdrL/2,PCB.hdrY+PCB.hdrL/2,0,PCB.hdrBody,'comp');for(let c=0;c<5;c++)R(PCB.hdrY-5.08+c*2.54-0.32,PCB.hdrY-5.08+c*2.54+0.32,PCB.hdrBody,PCB.hdrPin,'comp');
+    R(PCB.swY-2.6,PCB.swY+2.6,0,PCB.swH,'comp');R(PCB.led[3].y-0.4,PCB.led[3].y+0.4,0,0.7,'comp');
+    R(PCB.usb.y0,PCB.usb.y1,0,PCB.usb.h,'hid');
+    const B=PCB.smaBody;R(B.y0,B.y1,0,B.h,'hid');R(B.y1,PCB.smaBarrel.y1,PCB.smaAxisZ-PCB.smaBarrel.r,PCB.smaAxisZ+PCB.smaBarrel.r,'hid');
+    // Pinholes and LED holes
+    R(PCB.swY-1.1,PCB.swY+1.1,7,10,'cut');R(PCB.led[3].y-1,PCB.led[3].y+1,7,10,'cut');
+    const xd=Xf(yB)+6;o.push(dimV(xd,Z(10),Z(7),'3'));o.push(dimV(xd,Z(7),Z(0),'7'));o.push(dimV(xd,Z(0),Z(-PCB.T),'1.6'));o.push(dimV(xd,Z(-PCB.T),Z(zb0+3),'6'));o.push(dimV(xd,Z(zb0+3),Z(zb0),'3'));o.push(dimV(xd+34,Z(10),Z(zb0),'20.6'));
+    o.push(txt(Xf(PCB.hdrY),Z(10)-6,'Header protrudes 1.5 from the window','lblc','middle'));
+    o.push(txt(Xf(B.y1-2),Z(B.h)-6,'SMA extends 4 past the board','lbl2','middle'));
+    o.push(txt(Xf(yA),Z(zb0)+16,'Section x=45 (through J6, SW3, PWR LED); dashed = outline behind the section','lbl2','start'));
+    return ortho(0,0,(yB-yA)*s+ox+90,(10-zb0+4)*s+oy+30,'Variant B section: height stack of the two boards and standoffs',o.join(''));}
+  // A / C / stack
+  const zF=E.zFloor,t=E.t;
+  const yE=kind==='C'?C_Y1:E.y1;
+  R(E.y0,yE,zF,zF+E.tf,'cutf'); // floor
+  // -y wall (with USB cutout: hidden outline)
+  R(E.y0,E.y0+t,zF,E.zTop,'cutf');
+  R(E.y0,E.y0+t,USBCUT.z0,USBCUT.z1,'hid');
+  // +y wall / end cap, with SMA hole
+  if(kind==='C'){R(C_Y1,C_Y1+CAP_T,zF,PCB.smaAxisZ-3.3,'cutf');R(C_Y1,C_Y1+CAP_T,PCB.smaAxisZ+3.3,E.zTop,'cutf');}
+  else{R(E.y1-t,E.y1,zF,PCB.smaAxisZ-3.5,'cutf');R(E.y1-t,E.y1,PCB.smaAxisZ+3.5,E.zTop,'cutf');}
+  // Lid / tube top
+  R(E.y0,yE,E.in,E.zTop,'cutf');
+  if(kind!=='C'){R(E.y0+t+0.2,E.y0+t+1.4,E.zPart-1.5,E.zPart,'cutf');R(E.y1-t-1.4,E.y1-t-0.2,E.zPart-1.5,E.zPart,'cutf');
+    o.push(`<line x1="${f1(Xf(E.y0))}" y1="${f1(Z(E.zPart))}" x2="${f1(Xf(E.y0+t))}" y2="${f1(Z(E.zPart))}" class="part"/><line x1="${f1(Xf(E.y1-t))}" y1="${f1(Z(E.zPart))}" x2="${f1(Xf(E.y1))}" y2="${f1(Z(E.zPart))}" class="part"/>`);}
+  // Holes in the lid
+  R(PCB.swY-1.1,PCB.swY+1.1,E.in,E.zTop,'cut');R(PCB.led[3].y-1,PCB.led[3].y+1,E.in,E.zTop,'cut');
+  if(kind!=='C')R(PCB.hdrY-WIN.l/2,PCB.hdrY+WIN.l/2,E.in,E.zTop,'cutd');
+  // Bosses (hidden)
+  if(kind!=='C')[4,47.095].forEach(y=>{R(y-3.5,y+3.5,zF+E.tf,-PCB.T,'hid');R(y-3.5,y+3.5,0,E.in,'hid');o.push(`<line x1="${f1(Xf(y))}" y1="${f1(Z(E.zTop))}" x2="${f1(Xf(y))}" y2="${f1(Z(zF+E.tf+1))}" class="hid"/>`);});
+  else{R(E.y0+t,C_Y1,-PCB.T-1.4,-PCB.T-0.2,'hid');R(E.y0+t,C_Y1,0.2,1.4,'hid');}
+  // PCB and components on the section
+  R(0,PCB.D,-PCB.T,0,'pcb');
+  R(PCB.hdrY-PCB.hdrL/2,PCB.hdrY+PCB.hdrL/2,0,PCB.hdrBody,'comp');for(let c=0;c<5;c++)R(PCB.hdrY-5.08+c*2.54-0.32,PCB.hdrY-5.08+c*2.54+0.32,PCB.hdrBody,PCB.hdrPin,'comp');
+  R(PCB.swY-2.6,PCB.swY+2.6,0,PCB.swH,'comp');R(PCB.led[3].y-0.4,PCB.led[3].y+0.4,0,0.7,'comp');
+  // Hidden: USB-C, SMA, nut
+  R(PCB.usb.y0,PCB.usb.y1,0,PCB.usb.h,'hid');
+  const B=PCB.smaBody;R(B.y0,B.y1,0,B.h,'hid');R(B.y1,PCB.smaBarrel.y1,PCB.smaAxisZ-PCB.smaBarrel.r,PCB.smaAxisZ+PCB.smaBarrel.r,'hid');
+  const ny0=kind==='C'?C_Y1+CAP_T+0.2:E.y1+0.3;R(ny0,ny0+2.4,PCB.smaAxisZ-4,PCB.smaAxisZ+4,'brass');
+  // Dimension chain
+  const xd=Xf(yB)+6;
+  o.push(dimV(xd,Z(E.zTop),Z(E.in),'2.0'));o.push(dimV(xd,Z(E.in),Z(0),'9.5'));o.push(dimV(xd,Z(0),Z(-PCB.T),'1.6'));o.push(dimV(xd,Z(-PCB.T),Z(zF+E.tf),'3.5'));o.push(dimV(xd,Z(zF+E.tf),Z(zF),'2.0'));
+  o.push(dimV(xd+34,Z(E.zTop),Z(zF),'18.6'));
+  o.push(dimV(Xf(PCB.hdrY+PCB.hdrL/2)+8,Z(E.in),Z(PCB.hdrPin),'1.0'));
+  o.push(txt(Xf(PCB.hdrY-PCB.hdrL/2)-4,Z(4.5),'Header 8.5','lbl','end',3.5));
+  o.push(txt(Xf(PCB.swY),Z(E.zTop)-6,'Pinhole','lblc','middle'));o.push(txt(Xf(PCB.led[3].y),Z(E.zTop)-6,'LED','lblc','middle'));
+  o.push(txt(Xf(E.y0),Z(zF)+14,'USB-C cutout (in the wall, hidden line)','lblc','start'));
+  o.push(txt(Xf(B.y0+2),Z(B.h)-8,'SMA through the wall, nut outside','lblc','middle'));
+  if(kind==='C')o.push(txt(Xf(C_Y1+1),Z(zF)+14,'End cap','lblc','middle'));
+  o.push(txt(Xf(yA)+180,Z(zF)+14,'Section x=45 (through J6, SW3, PWR LED); dashed = hidden outline behind the section (bosses, USB-C, SMA J4)','lbl2','start'));
+  return ortho(0,0,(yB-yA)*s+ox+90,(E.H+4)*s+oy+26,`Variant ${kind} section: height stack`,o.join(''));}
+
+// ---- D front view (upright) ----
+function frontD(){const s=3,ox=20,oy=20;const X=x=>ox+x*s,Z=z=>oy+(160-z)*s;const o=[];
+  o.push(rectPx(X(0),Z(6),110*s,6*s,'shell'));o.push(rectPx(X(15.5),Z(34),79*s,28*s,'shell'));
+  o.push(rectPx(X(17.2),Z(34),75.6*s,12*s,'hid'));o.push(rectPx(X(30),Z(22),50*s,16*s,'hid'));
+  o.push(rectPx(X(17.5),Z(99),75*s,65*s,'shellc'));
+  const mx=x=>17.5+2.5+x,mz=y=>34+2.5+y;
+  PCB.led.forEach(l=>o.push(`<circle cx="${f1(X(mx(l.x)))}" cy="${f1(Z(mz(l.y)))}" r="${f1(1*s)}" class="cut"/>`));
+  PCB.sw.forEach(w=>{if(w.f==='RST'){const x=X(mx(w.x)),z=Z(mz(PCB.swY));o.push(`<polyline points="${f1(x-3.5*s)},${f1(z-4.5*s)} ${f1(x-3.5*s)},${f1(z+4.5*s)} ${f1(x+3.5*s)},${f1(z+4.5*s)} ${f1(x+3.5*s)},${f1(z-4.5*s)}" class="slot"/>`);}else o.push(`<circle cx="${f1(X(mx(w.x)))}" cy="${f1(Z(mz(PCB.swY)))}" r="${f1(1.1*s)}" class="cut"/>`);});
+  PCB.holes.forEach(([x,y])=>o.push(`<circle cx="${f1(X(mx(x)))}" cy="${f1(Z(mz(y)))}" r="${f1(2.75*s)}" class="screw"/>`));
+  PCB.sma.filter(a=>a.pop).forEach(a=>{const x=mx(a.x);o.push(rectPx(X(x-4.6),Z(101.4),9.2*s,2.4*s,'brass'));o.push(rectPx(X(x-3.15),Z(104),6.3*s,2.6*s,'gold'));o.push(rectPx(X(x-4.6),Z(111),9.2*s,7*s,'comp'));o.push(rectPx(X(x-3.6),Z(160),7.2*s,49*s,'comp'));});
+  o.push(rectPx(X(49),Z(22),12*s,20*s,'hid',1.5*s));o.push(txt(X(62),Z(14),'USB-C plug','lbl2','start'));
+  o.push(txt(X(55),Z(-4),'Dock 110 wide · slot depth 12 · plug cavity height 22','lbl2','middle'));
+  o.push(dimV(X(110)+10,Z(34),Z(0),'34'));o.push(dimV(X(110)+10,Z(99),Z(34),'65'));
+  return ortho(0,0,110*s+ox+60,160*s+oy+30,'Variant D front view: box plugged upright into the dock, antenna up',o.join(''));}
+
+// ===== Rendering =====
+function put(id,svg,cap){const fig=document.getElementById(id);if(!fig)return;fig.innerHTML=svg+(cap?`<figcaption>${cap}</figcaption>`:'');}
+put('fig-map',pcbMap(),'PCB top view (coordinates from the SMT coordinate file). Solid = populated parts, dashed = ANT2 reserved SMA positions; parentheses give the mounting-hole coordinates.');
+put('fig-stack',sectionView('stack'),'The section is taken at x=45, right through the J6 header, SW3 (BOOT ch38) and the PWR LED; dashed lines are the hidden outline behind the section. The SMA axis 3.2 is an estimate, verify against the connector datasheet.');
+put('iso-A',sceneA(),'Variant A exploded view. The tray carries all the side openings; the lid is just a plate with an inner lip, so both parts print opening-up with no supports.');
+put('top-A',topView('A'),'Top view: red = lid openings, dashed rectangle = optional SWD window; gray = PCB components below.');
+put('front-A',frontView('A'),'Front view (antenna end): three Ø7 through holes, the other three ANT2 positions scored.');
+put('rear-A',rearView(),'Rear view (USB end): the cutout is 13×7 to clear the 12×6.5 plug shell.');
+put('iso-B',sceneB(),'Variant B exploded view. The two plates are joined only by standoffs; SMA and USB-C exit between the plates and the header pokes through the top-plate window.');
+put('top-B',topView('B'),'Top view: the top plate has three real windows + pinholes + LED holes; corner screws.');
+put('sec-B',sectionView('B'),'Section: 3 + 6 + 1.6 + 7 + 3 = 20.6.');
+put('iso-C',sceneC(),'Variant C exploded view along the push-in direction. The tube’s antenna end is open, the USB end closed; the end cap is locked by the SMA nuts.');
+put('top-C',topView('C'),'Top view: no corner screws; the dashed line is the tube/end-cap boundary.');
+put('front-C',frontView('C'),'End-cap front view: the slightly tight Ø6.6 SMA holes are pressed flat by the nuts; two M2×8 at the lower corners self-tap into the tube’s thickened posts to keep the end cap from pulling the board out.');
+put('sec-C',sectionView('C'),'Section: rails on the two inner walls (dashed), PCB has no screws; total height same as A.');
+put('iso-D',sceneD(),'Variant D: the Variant A or C box plugs upright into the dock, antenna up, LEDs and buttons forward.');
+put('front-D',frontD(),'Front view: slot depth 12, plug cavity height 22, the USB-C cable turns inside the receptacle and exits the side channel.');
+
+// ===== Variant A revised (screws from the bottom, only LEDs on top, SMA U-slot) =====
+const BOSS_R=4;            // boss Ø8
+const FEET=[[12,10],[58,10],[12,41],[58,41]];
+const LEDTUBE={r:2.3,z0:2.5};
+const INSERT={r:2.0,h:6.5};
+const SCREW_L=12;
+const SLOT_R=3.7;
+
+function uSlotY(cx,cz,y,r,ztop){const pts=[];for(let i=0;i<=12;i++){const a=Math.PI+Math.PI*i/12;pts.push([cx+r*Math.cos(a),y,cz+r*Math.sin(a)]);}pts.push([cx+r,y,ztop]);pts.push([cx-r,y,ztop]);return pts;}
+
+function sceneA2(){const s=scene(),E=ENC,c=COL.shell;
+  // Screws: below the tray (exploded)
+  const zS=E.zFloor-14;PCB.holes.forEach(([x,y])=>{s.add(cylZ(x,y,zS,zS+SCREW_L-1.5,1.5,COL.screw));s.add(cylZ(x,y,zS+SCREW_L-1.5,zS+SCREW_L,3.1,COL.screw));});
+  s.add(trayBack(E.x0,E.y0,E.zFloor,E.x1,E.y1,E.zPart,E.t,E.tf,c));
+  PCB.holes.forEach(([x,y])=>{s.add(cylZ(x,y,E.zFloor+E.tf,-PCB.T,BOSS_R,c));s.add(holeZ(x,y,-PCB.T+0.01,1.7));});
+  s.add(trayFront(E.x0,E.y0,E.zFloor,E.x1,E.y1,E.zPart,E.t,c));
+  PCB.sma.filter(a=>a.pop).forEach(a=>s.add(F(uSlotY(a.x,PCB.smaAxisZ,E.y1,SLOT_R,E.zPart+0.02),COL.hole)));
+  const E1=20;s.add(pcbAsm(E1));
+  const E2=44;
+  PCB.holes.forEach(([x,y])=>s.add(cylZ(x,y,E2,E2+E.in,BOSS_R,c)));
+  PCB.led.forEach(l=>s.add(cylZ(l.x,l.y,E2+LEDTUBE.z0,E2+E.in,LEDTUBE.r,sh(c,-4))));
+  s.add(box(E.x0+E.t+0.2,E.y0+E.t+0.2,E2+E.zPart-1.5,E.x1-E.t-0.2,E.y1-E.t-0.2,E2+E.zPart,sh(c,-4)));
+  s.add(box(E.x0,E.y0,E2+E.zPart,E.x1,E.y1,E2+E.zTop,c));
+  PCB.led.forEach(l=>s.add(holeZ(l.x,l.y,E2+E.zTop,1.1)));
+  PCB.sma.filter(a=>a.pop).forEach(a=>{const p=[];for(let i=0;i<=12;i++){const t=Math.PI*i/12;p.push([a.x+SLOT_R*Math.cos(t),E.y1,E2+E.zPart+SLOT_R*Math.sin(t)]);}s.add(F(p,COL.hole));});
+  s.label([PCB.led[1].x,PCB.led[1].y,E2+E.zTop],'Only 4 LED holes Ø2.2 + engraved text on the top face',-230,-50,'end');
+  s.label([66,4,E2],'Lid boss Ø8 ×4, lower end presses an M3 heat-set insert, boss face holds the PCB',150,0);
+  s.label([PCB.led[3].x,PCB.led[3].y,E2+LEDTUBE.z0],'Light pipe Ø4.6 down to z=2.5, no light bleed across the three channels',-200,50,'end');
+  s.label([64,PCB.smaBarrel.y1,E1+PCB.smaAxisZ],'SMA-KWE thread extends 7.5 past the board edge, 5.0 past the wall',-150,60,'end');
+  s.label([PCB.hdr[2].x,PCB.hdrY,E1+PCB.hdrPin],'Header 8.5, cavity 10.0',150,30);
+  s.label([40.8,E.y1,PCB.smaAxisZ],'SMA hole Ø7.4 ×3 on the parting line: tray lower half, lid upper half',-60,80,'end');
+  s.label([66,4,-PCB.T],'Tray boss Ø8, M3 clearance hole',80,20);
+  s.label([66,4,zS],'M3×12 countersunk ×4, driven from the bottom',80,10);
+  return s.svg('Variant A revised exploded view: screws driven from the bottom, only LED holes on top');}
+
+function topViewA2(){const s=S,E=ENC;const x0=E.x0,x1=E.x1,y0=E.y0,y1=E.y1;const ox=30,oy=40;const X=x=>ox+(x-x0)*s,Y=y=>oy+(y1-y)*s;const o=[];
+  o.push(rectPx(X(x0),Y(y1),(x1-x0)*s,(y1-y0)*s,'shell',E.R*s));
+  o.push(pcbGhost(X,Y,s));
+  PCB.led.forEach(l=>{o.push(`<circle cx="${f1(X(l.x))}" cy="${f1(Y(l.y))}" r="${f1(1.1*s)}" class="cut"/>`);o.push(`<circle cx="${f1(X(l.x))}" cy="${f1(Y(l.y))}" r="${f1(2.3*s)}" class="hid"/>`);o.push(txt(X(l.x),Y(l.y-3.6),l.f,'deboss','middle',3.5));});
+  o.push(txt(X(35),Y(50),'BLEhound','debossB','middle',5));
+  PCB.holes.forEach(([x,y])=>o.push(`<circle cx="${f1(X(x))}" cy="${f1(Y(y))}" r="${f1(BOSS_R*s)}" class="hid"/>`));
+  o.push(txt(X(PCB.led[3].x)-3*s,Y(PCB.led[3].y),'LED holes Ø2.2 ×4, light pipe Ø4.6 below','lblc','end',3.5));
+  o.push(txt(X(66),Y(47.1)+4*s+10,'Boss Ø8 (hidden)','lbl2','middle'));
+  o.push(txt(X(35),Y(y1)+14,'No screws or button holes on the top face','lbl2','middle'));
+  o.push(dimH(X(x0),X(x1),Y(y0)+16,f1(x1-x0)));o.push(dimV(X(x1)+14,Y(y1),Y(y0),f1(y1-y0)));
+  return ortho(0,0,(x1-x0)*s+ox+50,(y1-y0)*s+oy+30,'Variant A revised top view: only 4 LED holes and engraved text',o.join(''));}
+
+function frontViewA2(){const s=S,E=ENC;const ox=64,oy=30;const X=x=>ox+(x-E.x0)*s,Z=z=>oy+(E.zTop-z)*s;const o=[];
+  o.push(rectPx(X(E.x0),Z(E.zTop),(E.x1-E.x0)*s,E.H*s,'shell',E.R*s));
+  o.push(`<line x1="${f1(X(E.x0))}" y1="${f1(Z(E.zPart))}" x2="${f1(X(E.x1))}" y2="${f1(Z(E.zPart))}" class="part"/>`);
+  o.push(`<line x1="${f1(X(E.x0))}" y1="${f1(Z(0))}" x2="${f1(X(E.x1))}" y2="${f1(Z(0))}" class="ax"/>`);
+  o.push(txt(X(E.x1)+4,Z(0),'PCB top face','lbl2','start',3));o.push(txt(X(E.x1)+4,Z(E.zPart),'Parting line z=6 = SMA axis','lbl2','start',-3));
+  const r=SLOT_R;
+  PCB.sma.forEach(a=>{const cx=X(a.x);if(!a.pop){o.push(`<circle cx="${f1(cx)}" cy="${f1(Z(PCB.smaAxisZ))}" r="${f1(r*s)}" class="cutd"/>`);return;}
+    o.push(`<circle cx="${f1(cx)}" cy="${f1(Z(PCB.smaAxisZ))}" r="${f1(r*s)}" class="cut"/>`);
+    o.push(`<circle cx="${f1(cx)}" cy="${f1(Z(PCB.smaAxisZ))}" r="${f1(PCB.smaBarrel.r*s)}" class="gold"/>`);});
+  o.push(dimH(X(17.6),X(40.8),Z(E.zTop)-8,'23.2'));o.push(dimH(X(40.8),X(64),Z(E.zTop)-8,'23.2'));
+  o.push(dimV(X(E.x1)+64,Z(PCB.smaAxisZ),Z(E.zFloor),f1(PCB.smaAxisZ-E.zFloor)));
+  o.push(dimV(X(E.x0)-14,Z(E.zTop),Z(E.zFloor),f1(E.H),-1));
+  o.push(txt(X(6),Z(E.zFloor)+14,'Ø7.4 full circle across the parting line: tray lower half, lid upper half, closes on assembly; dashed ANT2 positions off by default','lblc','start'));
+  return ortho(0,0,(E.x1-E.x0)*s+ox+110,E.H*s+oy+30,'Variant A revised front view: SMA U-slot',o.join(''));}
+
+function bottomViewA2(){const s=S,E=ENC;const x0=E.x0,x1=E.x1,y0=E.y0,y1=E.y1;const ox=30,oy=40;const X=x=>ox+(x1-x)*s,Y=y=>oy+(y1-y)*s;const o=[];
+  o.push(rectPx(X(x1),Y(y1),(x1-x0)*s,(y1-y0)*s,'shell',E.R*s));
+  PCB.holes.forEach(([x,y])=>{o.push(`<circle cx="${f1(X(x))}" cy="${f1(Y(y))}" r="${f1(3.2*s)}" class="cut"/>`);o.push(`<circle cx="${f1(X(x))}" cy="${f1(Y(y))}" r="${f1(1.7*s)}" class="screw"/>`);o.push(`<line x1="${f1(X(x)-1.4*s)}" y1="${f1(Y(y))}" x2="${f1(X(x)+1.4*s)}" y2="${f1(Y(y))}" class="dim" style="stroke:var(--ink)"/>`);});
+  FEET.forEach(([x,y])=>o.push(`<circle cx="${f1(X(x))}" cy="${f1(Y(y))}" r="${f1(4*s)}" class="hid"/>`));
+  o.push(rectPx(X(PCB.usb.x+6.5),Y(y0)-2,13*s,4,'cutd'));
+  o.push(txt(X(66),Y(4)-4.5*s,'M3×12 countersunk ×4, Ø6.4 counterbore','lblc','middle'));
+  o.push(txt(X(58),Y(41)-5*s,'Foot-pad positions Ø8 ×4 (clear of the screws)','lbl2','middle'));
+  o.push(txt(X(35),Y(y1)-8,'Antenna end','lbl2','middle'));o.push(txt(X(35),Y(y0)+18,'USB end','lbl2','middle'));
+  o.push(txt(X(x0)+4,Y(y1)+12,'Seen from the bottom (x-mirrored)','lbl2','end'));
+  return ortho(0,0,(x1-x0)*s+ox+50,(y1-y0)*s+oy+30,'Variant A revised bottom view: countersunk screws and foot pads',o.join(''));}
+
+function sectionA2(){const s=6,E=ENC;const ox=30,oy=30;const yA=E.y0-1,yB=E.y1+7;const Xf=y=>ox+(y-yA)*s,Z=z=>oy+(E.zTop+2-z)*s;const o=[];
+  const R=(ya,yb,za,zb,cls)=>o.push(rectPx(Xf(ya),Z(zb),(yb-ya)*s,(zb-za)*s,cls));
+  const zF=E.zFloor,t=E.t,cz=PCB.smaAxisZ;
+  R(E.y0,E.y1,zF,zF+E.tf,'cutf');
+  R(E.y0,E.y0+t,zF,E.zTop,'cutf');R(E.y0,E.y0+t,USBCUT.z0,USBCUT.z1,'hid');
+  R(E.y1-t,E.y1,zF,cz-SLOT_R,'cutf');R(E.y1-t,E.y1,cz+SLOT_R,E.zTop,'cutf');
+  R(E.y0,E.y1,E.in,E.zTop,'cutf');
+  R(E.y0+t+0.2,E.y0+t+1.4,E.zPart-1.5,E.zPart,'cutf');R(E.y1-t-1.4,E.y1-t-0.2,E.zPart-1.5,E.zPart,'cutf');
+  o.push(`<line x1="${f1(Xf(E.y0))}" y1="${f1(Z(E.zPart))}" x2="${f1(Xf(E.y0+t))}" y2="${f1(Z(E.zPart))}" class="part"/>`);
+  o.push(txt(Xf(E.y0+t)+3,Z(E.zPart)-4,'Parting line 6.0','lbl2','start'));
+  // LED light pipe (PWR, in the section)
+  const ly=PCB.led[3].y;R(ly-LEDTUBE.r,ly-1.1,LEDTUBE.z0,E.in,'cutf');R(ly+1.1,ly+LEDTUBE.r,LEDTUBE.z0,E.in,'cutf');R(ly-1.1,ly+1.1,E.in,E.zTop,'cut');
+  // Boss / nut / screw (hidden)
+  [4,47.095].forEach(y=>{R(y-BOSS_R,y+BOSS_R,zF+E.tf,-PCB.T,'hid');R(y-BOSS_R,y+BOSS_R,0,E.in,'hid');R(y-INSERT.r,y+INSERT.r,0,INSERT.h,'hid');
+    R(y-1.5,y+1.5,zF,zF+SCREW_L,'hid');o.push(`<polygon points="${f1(Xf(y-3.2))},${f1(Z(zF))} ${f1(Xf(y+3.2))},${f1(Z(zF))} ${f1(Xf(y+1.7))},${f1(Z(zF+1.5))} ${f1(Xf(y-1.7))},${f1(Z(zF+1.5))}" class="hid"/>`);});
+  R(0,PCB.D,-PCB.T,0,'pcb');
+  R(PCB.hdrY-PCB.hdrL/2,PCB.hdrY+PCB.hdrL/2,0,PCB.hdrBody,'comp');for(let c=0;c<5;c++)R(PCB.hdrY-5.08+c*2.54-0.32,PCB.hdrY-5.08+c*2.54+0.32,PCB.hdrBody,PCB.hdrPin,'comp');
+  for(let c=0;c<5;c++)R(PCB.hdrY-5.08+c*2.54-0.32,PCB.hdrY-5.08+c*2.54+0.32,-PCB.T-1.6,-PCB.T,'comp');
+  R(PCB.swY-2.6,PCB.swY+2.6,0,PCB.swH,'comp');R(ly-0.4,ly+0.4,0,0.7,'comp');
+  R(PCB.usb.y0,PCB.usb.y1,0,PCB.usb.h,'hid');
+  const B=PCB.smaBody;R(B.y0,B.y1,0,B.h,'hid');R(B.y1,PCB.smaBarrel.y1,PCB.smaAxisZ-PCB.smaBarrel.r,PCB.smaAxisZ+PCB.smaBarrel.r,'hid');
+  R(E.y1+0.3,E.y1+2.5,PCB.smaAxisZ-4,PCB.smaAxisZ+4,'brass');
+  const xd=Xf(yB)+6;
+  o.push(dimV(xd,Z(E.zTop),Z(E.in),'2.0'));o.push(dimV(xd,Z(E.in),Z(0),'10.0'));o.push(dimV(xd,Z(0),Z(-PCB.T),'1.6'));o.push(dimV(xd,Z(-PCB.T),Z(zF+E.tf),'4.0'));o.push(dimV(xd,Z(zF+E.tf),Z(zF),'2.0'));
+  o.push(dimV(xd+38,Z(E.zTop),Z(zF),f1(E.H)));
+  o.push(dimV(Xf(PCB.hdrY+PCB.hdrL/2)+8,Z(E.in),Z(PCB.hdrPin),'1.5'));
+  o.push(txt(Xf(PCB.hdrY-PCB.hdrL/2)-4,Z(4.5),'Header 8.5','lbl','end',3.5));
+  o.push(txt(Xf(PCB.hdrY),Z(-PCB.T-1.6)+12,'Pin tails + solder joints','lbl2','middle'));
+  o.push(txt(Xf(ly),Z(E.zTop)-6,'LED hole + light pipe','lblc','middle'));
+  o.push(txt(Xf(4),Z(zF)+14,'M3×12 countersunk (hidden)','lblc','start'));
+  o.push(txt(Xf(47.1),Z(INSERT.h)-4,'Heat-set insert','lbl2','middle'));
+  o.push(txt(Xf(E.y1+2),Z(E.zTop)-6,'SMA-KWE body 9.2 tall, axis 6.0, nut outside (optional)','lblc','end'));
+  o.push(txt(Xf(yA)+130,Z(zF)+28,'Section x=45; dashed = hidden outline behind the section (bosses, screws, USB-C, SMA J4)','lbl2','start'));
+  return ortho(0,0,(yB-yA)*s+ox+96,(E.H+4)*s+oy+40,'Variant A revised section: height stack and bottom screws',o.join(''));}
+
+put('iso-A2',sceneA2(),'Revised exploded view. Screws enter from the bottom, the lid bosses carry heat-set inserts at their lower ends; the lid top has only LED holes with light pipes below.');
+put('top-A2',topViewA2(),'Top view: only 4 LED holes and engraved text; bosses and light pipes are under the lid (dashed).');
+put('front-A2',frontViewA2(),'Front view: the parting line is placed at the SMA-KWE thread axis 6.0, the three Ø7.4 holes are half-circle top and bottom and close on assembly; when the nut locks outside the wall it also presses the two halves together.');
+put('rear-A2',rearView(),'Rear view: the USB-C cutout is reduced to 9.8×4.0 to fit the receptacle (receptacle overhangs the board edge 1.4, front face 1.1 from the outer surface, the plug metal shell fully enters, overmold stays outside the wall), with a 0.8 outer lead-in chamfer; insert the USB end at an angle when seating the board.');
+put('sec-A2',sectionA2(),'Section: 2.0 + 4.0 + 1.6 + 10.0 + 2.0 = 19.6. 1.5 left above the header, 0.8 above the 9.2 SMA body, 4.0 below the pin tails.');
+put('bottom-A2',bottomViewA2(),'Bottom view: 4 countersunk screws at the corners, foot pads moved inward, clear of the screws.');
+
+// ===== 3D view + exploded animation (three.js r128) =====
+// Coordinate mapping: three.x = PCB x, three.y = height z (PCB top face 0), three.z = -PCB y (antenna end at -z)
+(function(){
+'use strict';
+const vp=document.getElementById('viewport'), canvas=document.getElementById('gl');
+if(!vp||!canvas) return;
+if(!window.THREE){ vp.insertAdjacentHTML('beforeend','<div class="vpmsg">three.js failed to load (needs cdnjs online); the 3D view is unavailable, but the drawings below still work.</div>'); return; }
+const REDUCED=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const E=ENC, T=E.t, R=E.R;
+const OUT={x0:E.x0,y0:E.y0,x1:E.x1,y1:E.y1,r:R};
+const INN={x0:-E.c,y0:-E.c,x1:PCB.W+E.c,y1:PCB.D+E.c,r:R-T};
+const LIPO={x0:-E.c+0.2,y0:-E.c+0.2,x1:PCB.W+E.c-0.2,y1:PCB.D+E.c-0.2,r:0.8};
+const LIPI={x0:-E.c+1.4,y0:-E.c+1.4,x1:PCB.W+E.c-1.4,y1:PCB.D+E.c-1.4,r:0.5};
+const Z_FLOOR=E.zFloor, Z_FLOOR_TOP=E.zFloor+E.tf, Z_PART=E.zPart, Z_IN=E.in, Z_TOP=E.zTop;
+const SLOT_CZ=PCB.smaAxisZ, SLOT_R=3.7;
+
+// ---------- 2D outline utilities ----------
+function rrLoop(x0,y0,x1,y1,r,cuts){
+  cuts=cuts||[]; const pts=[], idx={}, N=8;
+  r=Math.max(0.001,Math.min(r,(x1-x0)/2-1e-3,(y1-y0)/2-1e-3));
+  const arc=(cx,cy,a0,a1)=>{for(let i=0;i<=N;i++){const a=a0+(a1-a0)*i/N;pts.push({x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)});}};
+  const edge=(side,from,to,mk)=>{const cs=cuts.filter(c=>c.side===side).sort((a,b)=>to>from?a.v-b.v:b.v-a.v);for(const c of cs){pts.push(mk(c.v));idx[c.key]=pts.length-1;}};
+  arc(x0+r,y0+r,Math.PI,1.5*Math.PI);
+  edge('B',x0+r,x1-r,v=>({x:v,y:y0}));
+  arc(x1-r,y0+r,1.5*Math.PI,2*Math.PI);
+  edge('R',y0+r,y1-r,v=>({x:x1,y:v}));
+  arc(x1-r,y1-r,0,0.5*Math.PI);
+  edge('F',x1-r,x0+r,v=>({x:v,y:y1}));
+  arc(x0+r,y1-r,0.5*Math.PI,Math.PI);
+  edge('L',y1-r,y0+r,v=>({x:x0,y:v}));
+  return {pts,idx};
+}
+function sub(pts,i0,i1){const o=[];let i=i0;for(;;){o.push(pts[i]);if(i===i1)break;i=(i+1)%pts.length;}return o;}
+function subRev(pts,i0,i1){const o=[];let i=i0;for(;;){o.push(pts[i]);if(i===i1)break;i=(i-1+pts.length)%pts.length;}return o;}
+function dedupe(pts){const o=[];for(const p of pts){const q=o[o.length-1];if(!q||Math.hypot(p.x-q.x,p.y-q.y)>1e-5)o.push(p);}if(o.length>2){const a=o[0],b=o[o.length-1];if(Math.hypot(a.x-b.x,a.y-b.y)<1e-5)o.pop();}return o;}
+function toShape(outer,holes){const s=new THREE.Shape(dedupe(outer).map(p=>new THREE.Vector2(p.x,p.y)));for(const h of (holes||[]))s.holes.push(new THREE.Path(dedupe(h).map(p=>new THREE.Vector2(p.x,p.y))));return s;}
+function ringShapes(o,i,gaps){
+  gaps=gaps||[]; const cuts=[];
+  gaps.forEach((g,k)=>{cuts.push({side:g.side,v:g.a,key:'g'+k+'a'},{side:g.side,v:g.b,key:'g'+k+'b'});});
+  const O=rrLoop(o.x0,o.y0,o.x1,o.y1,o.r,cuts), I=rrLoop(i.x0,i.y0,i.x1,i.y1,i.r,cuts);
+  if(!gaps.length) return [toShape(O.pts,[I.pts])];
+  const gs=gaps.map((g,k)=>{const a=O.idx['g'+k+'a'],b=O.idx['g'+k+'b'],ai=I.idx['g'+k+'a'],bi=I.idx['g'+k+'b'];return {s:Math.min(a,b),e:Math.max(a,b),sI:Math.min(ai,bi),eI:Math.max(ai,bi)};}).sort((p,q)=>p.s-q.s);
+  const shapes=[];
+  for(let k=0;k<gs.length;k++){const g=gs[k],n=gs[(k+1)%gs.length];shapes.push(toShape(sub(O.pts,g.e,n.s).concat(subRev(I.pts,n.sI,g.eI))));}
+  return shapes;
+}
+function circlePts(cx,cy,r,n){n=n||40;const o=[];for(let i=0;i<n;i++){const a=i/n*2*Math.PI;o.push({x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)});}return o;}
+function rectPts(x0,y0,x1,y1,r){return rrLoop(x0,y0,x1,y1,r||0.001).pts;}
+
+// ---------- 3D utilities ----------
+let SHELL_MATS=[], ALL_MATS=[];
+const mat=(hex,o)=>{const m=new THREE.MeshStandardMaterial(Object.assign({color:hex,roughness:0.6,metalness:0},o||{}));m.color.convertSRGBToLinear();if(o&&o.emissive)m.emissive.convertSRGBToLinear();ALL_MATS.push(m);return m;};
+const shell=(hex)=>{const m=mat(hex,{roughness:0.55});SHELL_MATS.push(m);return m;};
+// Board-face outline (x, y_pcb) extruded along height: z0..z1
+function extrudeUp(shapes,z0,z1,m){const arr=Array.isArray(shapes)?shapes:[shapes];const geo=new THREE.ExtrudeGeometry(arr,{depth:z1-z0,bevelEnabled:false});geo.rotateX(-Math.PI/2);geo.translate(0,z0,0);const me=new THREE.Mesh(geo,m);me.castShadow=true;me.receiveShadow=true;return me;}
+// Elevation outline (x, height) extruded along PCB y: y0..y1 (PCB coordinates)
+function extrudeY(shapes,y0,y1,m){const arr=Array.isArray(shapes)?shapes:[shapes];const geo=new THREE.ExtrudeGeometry(arr,{depth:y1-y0,bevelEnabled:false});geo.translate(0,0,-y1);const me=new THREE.Mesh(geo,m);me.castShadow=true;me.receiveShadow=true;return me;}
+function box(x0,x1,y0,y1,z0,z1,m){const me=new THREE.Mesh(new THREE.BoxGeometry(x1-x0,z1-z0,y1-y0),m);me.position.set((x0+x1)/2,(z0+z1)/2,-(y0+y1)/2);me.castShadow=true;me.receiveShadow=true;return me;}
+function cylUp(cx,cy,r,z0,z1,m,ri,n){if(ri>0)return extrudeUp(toShape(circlePts(cx,cy,r),[circlePts(cx,cy,ri)]),z0,z1,m);const me=new THREE.Mesh(new THREE.CylinderGeometry(r,r,z1-z0,n||36),m);me.position.set(cx,(z0+z1)/2,-cy);me.castShadow=true;me.receiveShadow=true;return me;}
+function cylAlongY(cx,cz,r,y0,y1,m,n){const g=new THREE.CylinderGeometry(r,r,y1-y0,n||36);g.rotateX(Math.PI/2);const me=new THREE.Mesh(g,m);me.position.set(cx,cz,-(y0+y1)/2);me.castShadow=true;me.receiveShadow=true;return me;}
+function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function roundRect(x,a,b,w,h,r){x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath();}
+function textSprite(text){const c=document.createElement('canvas');c.width=384;c.height=112;const x=c.getContext('2d');const bg=cssVar('--panel')||'#fff',fg=cssVar('--accent')||'#1f5fbf',ln=cssVar('--line')||'#ccc';x.fillStyle=bg;x.strokeStyle=ln;x.lineWidth=3;roundRect(x,6,6,372,100,18);x.fill();x.stroke();x.fillStyle=fg;x.font='500 54px "IBM Plex Mono",monospace';x.textAlign='center';x.textBaseline='middle';x.fillText(text,192,58);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,transparent:true}));sp.scale.set(12,3.5,1);return sp;}
+function dimLine(group,a,b,text,lm){group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,b]),lm));const d=b.clone().sub(a).normalize();const up=Math.abs(d.y)>0.9?new THREE.Vector3(1,0,0):new THREE.Vector3(0,1,0);const n=new THREE.Vector3().crossVectors(d,up).normalize().multiplyScalar(1.6);for(const p of [a,b])group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([p.clone().add(n),p.clone().sub(n)]),lm));const s=textSprite(text);s.position.copy(a).lerp(b,0.5);group.add(s);}
+function textTex(text,w,h,fg){const c=document.createElement('canvas');c.width=512;c.height=Math.max(32,Math.round(512*h/w));const x=c.getContext('2d');x.fillStyle=fg;x.font='700 '+Math.round(c.height*0.66)+'px "Archivo","IBM Plex Mono",sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(text,c.width/2,c.height/2+1);const tex=new THREE.CanvasTexture(c);tex.anisotropy=4;return tex;}
+function decalTop(text,cx,cy,w,h,z,fg){const me=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:textTex(text,w,h,fg),transparent:true,depthWrite:false}));me.geometry.rotateX(-Math.PI/2);me.position.set(cx,z,-cy);me.renderOrder=2;return me;}
+
+// ---------- PCB ----------
+function buildPCB(){
+  const g=new THREE.Group();
+  g.add(extrudeUp(toShape(rrLoop(0,0,PCB.W,PCB.D,0.3).pts,PCB.holes.map(h=>circlePts(h[0],h[1],1.6))),-PCB.T,0,mat(0x1e6a3d,{roughness:0.5})));
+  const mIC=mat(0x23262b,{roughness:0.5}), mSW=mat(0x6a7076,{roughness:0.7}), mSWc=mat(0x3f454b), mLED=mat(0x9be15d,{emissive:0x5fc12a,emissiveIntensity:0.8}), mMet=mat(0xc9ccd0,{metalness:0.85,roughness:0.3}), mGold=mat(0xd4a53a,{metalness:0.7,roughness:0.35}), mBlk=mat(0x1c1f24,{roughness:0.7}), mXtal=mat(0xb5bcc2,{metalness:0.6,roughness:0.35});
+  PCB.nrf54.forEach(u=>g.add(box(u.x-3,u.x+3,PCB.nrf54Y-3,PCB.nrf54Y+3,0,0.9,mIC)));
+  PCB.nrf21.forEach(u=>g.add(box(u.x-2,u.x+2,PCB.nrf21Y-2,PCB.nrf21Y+2,0,0.9,mIC)));
+  g.add(box(PCB.hub.x-2,PCB.hub.x+2,PCB.hub.y-2,PCB.hub.y+2,0,0.9,mIC));
+  [[10.55,38.2],[32.03,38.2],[53.13,38.2]].forEach(p=>g.add(box(p[0]-1,p[0]+1,p[1]-0.8,p[1]+0.8,0,0.8,mXtal)));
+  PCB.sw.forEach(w=>{g.add(box(w.x-2.6,w.x+2.6,PCB.swY-2.6,PCB.swY+2.6,0,1.5,mSW));g.add(cylUp(w.x,PCB.swY,1.5,1.5,1.7,mSWc,0,24));});
+  PCB.led.forEach(l=>g.add(box(l.x-0.8,l.x+0.8,l.y-0.4,l.y+0.4,0,0.7,mLED)));
+  PCB.hdr.forEach(h=>{g.add(box(h.x-2.54,h.x+2.54,PCB.hdrY-6.35,PCB.hdrY+6.35,0,2.5,mBlk));
+    for(let r=0;r<2;r++)for(let c=0;c<5;c++){const px=h.x-1.27+r*2.54,py=PCB.hdrY-5.08+c*2.54;g.add(box(px-0.32,px+0.32,py-0.32,py+0.32,-PCB.T-1.4,8.5,mGold));}});
+  const U=PCB.usb;g.add(box(U.x-U.w/2,U.x+U.w/2,U.y0,U.y1,0,U.h,mMet));g.add(box(U.x-4.2,U.x+4.2,U.y0-0.05,U.y0+0.9,0.5,U.h-0.5,mBlk));
+  const mSMA=mat(0xc3c8cc,{metalness:0.8,roughness:0.35});
+  PCB.sma.filter(a=>a.pop).forEach(a=>{const B=PCB.smaBody;g.add(box(a.x-B.w/2,a.x+B.w/2,B.y0,B.y1,0,B.h,mSMA));g.add(cylAlongY(a.x,PCB.smaAxisZ,PCB.smaBarrel.r,B.y1,PCB.smaBarrel.y1,mGold));g.add(cylAlongY(a.x,PCB.smaAxisZ,2.3,PCB.smaBarrel.y1-0.6,PCB.smaBarrel.y1+0.01,mat(0xf1efe6),24));g.add(cylAlongY(a.x,PCB.smaAxisZ,0.65,PCB.smaBarrel.y1-0.6,PCB.smaBarrel.y1+0.02,mGold,12));});
+  g.add(decalTop('BLEhound',35,12,8,3,0.02,'#eef3ea'));
+  return g;
+}
+
+// ---------- Case ----------
+function frontWallShape(){
+  const xa=OUT.x0+R,xb=OUT.x1-R,hb=Z_FLOOR_TOP-0.01,ht=Z_PART;
+  const p=[{x:xa,y:hb},{x:xb,y:hb},{x:xb,y:ht}];
+  const xs=PCB.sma.filter(a=>a.pop).map(a=>a.x).sort((a,b)=>b-a);
+  for(const cx of xs){p.push({x:cx+SLOT_R,y:ht});for(let i=0;i<=12;i++){const a=-Math.PI*i/12;p.push({x:cx+SLOT_R*Math.cos(a),y:SLOT_CZ+SLOT_R*Math.sin(a)});}p.push({x:cx-SLOT_R,y:ht});}
+  p.push({x:xa,y:ht});
+  return toShape(p);
+}
+function rearWallShape(){
+  const xa=OUT.x0+R,xb=OUT.x1-R,hb=Z_FLOOR_TOP-0.01,ht=Z_PART;
+  const U=PCB.usb;
+  return toShape([{x:xa,y:hb},{x:xb,y:hb},{x:xb,y:ht},{x:xa,y:ht}],[rectPts(U.x-USBCUT.w/2,USBCUT.z0,U.x+USBCUT.w/2,USBCUT.z1,USBCUT.r)]);
+}
+function lidFrontShape(){
+  const xa=OUT.x0+R,xb=OUT.x1-R,hb=Z_PART-0.01,ht=Z_IN+0.01;
+  const p=[{x:xa,y:ht},{x:xa,y:hb}];
+  const xs=PCB.sma.filter(a=>a.pop).map(a=>a.x).sort((a,b)=>a-b);
+  for(const cx of xs){p.push({x:cx-SLOT_R,y:hb});for(let i=0;i<=12;i++){const a=Math.PI-Math.PI*i/12;p.push({x:cx+SLOT_R*Math.cos(a),y:SLOT_CZ+SLOT_R*Math.sin(a)});}p.push({x:cx+SLOT_R,y:hb});}
+  p.push({x:xb,y:hb});p.push({x:xb,y:ht});
+  return toShape(p);
+}
+function buildShell(){
+  const mT=shell(0x7f95ad), mL=shell(0x9fb2c6), mScrew=mat(0x6f767d,{metalness:0.7,roughness:0.4}), mBrass=mat(0xc9a14a,{metalness:0.75,roughness:0.35});
+  const tray=new THREE.Group(), lid=new THREE.Group(), screws=new THREE.Group(), nuts=new THREE.Group();
+  // Tray
+  tray.add(extrudeUp(toShape(rrLoop(OUT.x0,OUT.y0,OUT.x1,OUT.y1,OUT.r).pts,PCB.holes.map(h=>circlePts(h[0],h[1],1.7))),Z_FLOOR,Z_FLOOR_TOP,mT));
+  const sideGaps=[{side:'F',a:OUT.x0+R,b:OUT.x1-R},{side:'B',a:OUT.x0+R,b:OUT.x1-R}];
+  tray.add(extrudeUp(ringShapes(OUT,INN,sideGaps),Z_FLOOR_TOP-0.01,Z_PART,mT));
+  tray.add(extrudeY(frontWallShape(),OUT.y1-T,OUT.y1,mT));
+  tray.add(extrudeY(rearWallShape(),OUT.y0,OUT.y0+T,mT));
+  for(const h of PCB.holes) tray.add(cylUp(h[0],h[1],BOSS_R,Z_FLOOR_TOP-0.01,-PCB.T,mT,1.7));
+  // Lid
+  lid.add(extrudeUp(toShape(rrLoop(OUT.x0,OUT.y0,OUT.x1,OUT.y1,OUT.r).pts,PCB.led.map(l=>circlePts(l.x,l.y,1.1))),Z_IN,Z_TOP,mL));
+  lid.add(extrudeUp(ringShapes(OUT,INN,sideGaps),Z_PART,Z_IN+0.01,mL));
+  lid.add(extrudeY(lidFrontShape(),OUT.y1-T,OUT.y1,mL));
+  lid.add(extrudeY(toShape([{x:OUT.x0+R,y:Z_PART-0.01},{x:OUT.x1-R,y:Z_PART-0.01},{x:OUT.x1-R,y:Z_IN+0.01},{x:OUT.x0+R,y:Z_IN+0.01}]),OUT.y0,OUT.y0+T,mL));
+  const lipGaps=PCB.sma.filter(a=>a.pop).map(a=>({side:'F',a:a.x-SLOT_R-1,b:a.x+SLOT_R+1}));
+  lid.add(extrudeUp(ringShapes(LIPO,LIPI,lipGaps),Z_PART-1.5,Z_PART+0.01,mL));
+  lid.add(extrudeUp(ringShapes(INN,LIPI,lipGaps),Z_PART-0.01,Z_PART+1.0,mL));
+  for(const h of PCB.holes){lid.add(cylUp(h[0],h[1],BOSS_R,0,INSERT.h,mL,INSERT.r));lid.add(cylUp(h[0],h[1],BOSS_R,INSERT.h-0.01,Z_IN+0.01,mL,0));lid.add(cylUp(h[0],h[1],2.3,0.2,INSERT.h-0.4,mBrass,1.5,24));}
+  for(const l of PCB.led) lid.add(cylUp(l.x,l.y,LEDTUBE.r,LEDTUBE.z0,Z_IN+0.01,mL,1.1));
+  const ink='#2b3a4a';
+  lid.add(decalTop('BLEhound',35,50,26,4.6,Z_TOP+0.02,ink));
+  PCB.led.forEach(l=>lid.add(decalTop(l.f,l.x,l.y-3.6,7,2.2,Z_TOP+0.02,ink)));
+  // Screw (countersunk)
+  for(const h of PCB.holes){screws.add(cylUp(h[0],h[1],1.5,Z_FLOOR+1.2,Z_FLOOR+SCREW_L,mScrew,0,20));const head=new THREE.Mesh(new THREE.CylinderGeometry(1.5,3.2,1.5,24),mScrew);head.position.set(h[0],Z_FLOOR+0.75,-h[1]);head.castShadow=true;screws.add(head);}
+  // SMA nut (outside the wall)
+  PCB.sma.filter(a=>a.pop).forEach(a=>{const n=cylAlongY(a.x,PCB.smaAxisZ,4.6,OUT.y1+0.3,OUT.y1+2.5,mBrass,6);nuts.add(n);});
+  const g=new THREE.Group();g.add(tray,lid,screws,nuts);
+  return {group:g,tray,lid,screws,nuts};
+}
+
+// ---------- Scene ----------
+let renderer,scene,camera,orbit,root,pcbGroup,shellRef,dimGroup,xray=false,showPCB=true,showDim=true,clip=false,explodeT=0;
+const CLIP=[new THREE.Plane(new THREE.Vector3(-1,0,0),45)];
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function Orbit(el,cam){
+  this.target=new THREE.Vector3(35,2.2,-30);this.theta=0.75;this.phi=0.95;this.r=200;
+  this.gt=this.theta;this.gp=this.phi;this.gr=this.r;this.baseR=this.r;this.auto=!REDUCED;this.cam=cam;
+  const self=this;let down=null,btn=0;const pts=new Map();
+  el.addEventListener('pointerdown',e=>{el.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});down={x:e.clientX,y:e.clientY};btn=e.button;self.setAuto(false);});
+  el.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;
+    if(pts.size===2){const arr=[...pts.values()];const d0=Math.hypot(arr[0].x-arr[1].x,arr[0].y-arr[1].y);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});const a2=[...pts.values()];const d1=Math.hypot(a2[0].x-a2[1].x,a2[0].y-a2[1].y);if(d0>0&&d1>0){self.gr=clamp(self.gr*(d0/d1),60,520);self.r=self.gr;self.baseR=self.gr/(1+0.28*explodeT);}return;}
+    const dx=e.clientX-down.x,dy=e.clientY-down.y;down={x:e.clientX,y:e.clientY};pts.set(e.pointerId,down);
+    if(btn===2||e.shiftKey){self.pan(dx,dy);}else{self.gt-=dx*0.006;self.gp=clamp(self.gp-dy*0.006,0.03,1.62);self.theta=self.gt;self.phi=self.gp;}});
+  const up=e=>{pts.delete(e.pointerId);};el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
+  el.addEventListener('wheel',e=>{e.preventDefault();self.gr=clamp(self.gr*Math.exp(e.deltaY*0.0012),60,520);self.r=self.gr;self.baseR=self.gr/(1+0.28*explodeT);},{passive:false});
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+  el.addEventListener('dblclick',()=>self.view('iso'));
+}
+Orbit.prototype.setAuto=function(v){this.auto=v;const b=document.getElementById('t-spin');if(b)b.setAttribute('aria-pressed',v?'true':'false');};
+Orbit.prototype.pan=function(dx,dy){const right=new THREE.Vector3(),up=new THREE.Vector3();this.cam.matrix.extractBasis(right,up,new THREE.Vector3());const k=this.r*0.0011;this.target.addScaledVector(right,-dx*k).addScaledVector(up,dy*k);};
+Orbit.prototype.view=function(name){const V={iso:[0.75,0.95,200],top:[0,0.002,180],ant:[Math.PI,1.25,190],usb:[0,1.25,190]}[name];this.gt=V[0];this.gp=V[1];this.baseR=V[2];this.gr=V[2]*(1+0.28*explodeT);this.setAuto(false);this.target.set(35,2.2+16*explodeT,-30);if(REDUCED){this.theta=this.gt;this.phi=this.gp;this.r=this.gr;}};
+Orbit.prototype.update=function(dt){if(this.auto)this.gt+=dt*0.15;const k=REDUCED?1:0.14;this.theta+=(this.gt-this.theta)*k;this.phi+=(this.gp-this.phi)*k;this.r+=(this.gr-this.r)*k;const t=this.target;this.cam.position.set(t.x+this.r*Math.sin(this.phi)*Math.sin(this.theta),t.y+this.r*Math.cos(this.phi),t.z+this.r*Math.sin(this.phi)*Math.cos(this.theta));this.cam.lookAt(t);};
+
+function initGL(){
+  try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});}catch(e){vp.insertAdjacentHTML('beforeend','<div class="vpmsg">This browser does not support WebGL and cannot render the 3D view.</div>');return false;}
+  renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.setClearColor(0,0);renderer.outputEncoding=THREE.sRGBEncoding;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.localClippingEnabled=true;
+  scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(30,4/3,1,3000);
+  scene.add(new THREE.HemisphereLight(0xe6edf3,0x3a4048,0.6));
+  const sun=new THREE.DirectionalLight(0xffffff,0.85);sun.position.set(90,140,80);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);const sc=sun.shadow.camera;sc.left=-110;sc.right=110;sc.top=110;sc.bottom=-110;sc.near=10;sc.far=500;sun.shadow.bias=-0.0006;scene.add(sun);
+  const fill=new THREE.DirectionalLight(0xdfe8f5,0.3);fill.position.set(-90,50,-70);scene.add(fill);
+  root=new THREE.Group();scene.add(root);orbit=new Orbit(canvas,camera);
+  new ResizeObserver(()=>{const w=vp.clientWidth,h=vp.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}).observe(vp);
+  return true;
+}
+function build(){
+  SHELL_MATS=[];ALL_MATS=[];
+  shellRef=buildShell();pcbGroup=buildPCB();pcbGroup.visible=showPCB;root.add(shellRef.group,pcbGroup);
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(800,800),new THREE.ShadowMaterial({opacity:0.22}));ground.rotation.x=-Math.PI/2;ground.position.set(35,Z_FLOOR-0.03,-30);ground.receiveShadow=true;root.add(ground);
+  const gc=new THREE.Color(cssVar('--line')||'#c5ccc3');const grid=new THREE.GridHelper(260,26,gc,gc);grid.position.set(35,Z_FLOOR-0.06,-30);grid.material.transparent=true;grid.material.opacity=0.5;root.add(grid);
+  dimGroup=new THREE.Group();dimGroup.visible=showDim;root.add(dimGroup);
+  const lm=new THREE.LineBasicMaterial({color:new THREE.Color(cssVar('--accent')||'#1f5fbf')});
+  dimLine(dimGroup,new THREE.Vector3(OUT.x0,Z_FLOOR,-OUT.y0+8),new THREE.Vector3(OUT.x1,Z_FLOOR,-OUT.y0+8),'75.0',lm);
+  dimLine(dimGroup,new THREE.Vector3(OUT.x1+9,Z_FLOOR,-OUT.y0),new THREE.Vector3(OUT.x1+9,Z_FLOOR,-OUT.y1),'65.0',lm);
+  dimLine(dimGroup,new THREE.Vector3(OUT.x1+9,Z_FLOOR,-OUT.y0+8),new THREE.Vector3(OUT.x1+9,Z_TOP,-OUT.y0+8),'19.6',lm);
+  applyXray();applyClip();setExplode(0);
+}
+function applyXray(){for(const m of SHELL_MATS){m.transparent=xray;m.opacity=xray?0.32:1;m.depthWrite=!xray;m.side=xray?THREE.DoubleSide:THREE.FrontSide;m.needsUpdate=true;}}
+function applyClip(){for(const m of ALL_MATS){m.clippingPlanes=clip?CLIP:[];m.clipShadows=clip;m.side=clip?THREE.DoubleSide:(xray&&SHELL_MATS.includes(m)?THREE.DoubleSide:THREE.FrontSide);m.needsUpdate=true;}}
+const STEPS=[[0,'Assembled'],[0.02,'① Back out the 4 M3×12 from the bottom'],[0.35,'② Lift the lid, bosses leave the PCB'],[0.62,'③ Lift the PCB off the tray, back out the SMA nuts']];
+function setExplode(t){
+  explodeT=t;const s=shellRef;
+  const e1=clamp(t/0.35,0,1),e2=clamp((t-0.3)/0.4,0,1),e3=clamp((t-0.6)/0.4,0,1);
+  s.screws.position.y=-20*e1;s.lid.position.y=38*e2;pcbGroup.position.y=16*e3;s.nuts.position.z=-14*e3;if(orbit){orbit.gr=orbit.baseR*(1+0.28*t);orbit.target.y=2.2+16*t;}
+  const sl=document.getElementById('explode');if(sl&&Math.abs(sl.value/100-t)>0.005)sl.value=Math.round(t*100);
+  let step=STEPS[0][1];for(const st of STEPS)if(t>=st[0])step=st[1];
+  const cap=document.getElementById('caption');if(cap)cap.innerHTML=`<b>Explode ${Math.round(t*100)}%</b> · ${step}`;
+  document.querySelectorAll('#spec3d li').forEach((li,i)=>li.classList.toggle('on',(i===0&&t<0.02)||(i===1&&t>=0.02&&t<0.35)||(i===2&&t>=0.35&&t<0.62)||(i===3&&t>=0.62)));
+}
+// Disassembly animation
+let tween=null;
+function animateTo(target){const from=explodeT,dur=REDUCED?0:1800,t0=performance.now();if(tween)cancelAnimationFrame(tween);const btn=document.getElementById('b-explode');
+  (function step(now){const k=dur?clamp((now-t0)/dur,0,1):1;const ease=k<0.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;setExplode(from+(target-from)*ease);if(k<1)tween=requestAnimationFrame(step);else{tween=null;if(btn)btn.textContent=explodeT>0.5?'◀ Reassemble':'▶ Explode';}})(t0);}
+
+// ---------- UI ----------
+for(const v of ['iso','top','ant','usb']){const b=document.getElementById('v-'+v);if(b)b.addEventListener('click',()=>{orbit.view(v);document.querySelectorAll('.hud.tl .btn').forEach(x=>x.setAttribute('aria-pressed',x.id==='v-'+v?'true':'false'));});}
+const on=(id,fn)=>{const b=document.getElementById(id);if(b)b.addEventListener('click',fn);};
+on('t-xray',e=>{xray=!xray;e.currentTarget.setAttribute('aria-pressed',xray);applyXray();applyClip();});
+on('t-pcb',e=>{showPCB=!showPCB;e.currentTarget.setAttribute('aria-pressed',showPCB);pcbGroup.visible=showPCB;});
+on('t-dim',e=>{showDim=!showDim;e.currentTarget.setAttribute('aria-pressed',showDim);dimGroup.visible=showDim;});
+on('t-clip',e=>{clip=!clip;e.currentTarget.setAttribute('aria-pressed',clip);applyClip();});
+on('t-spin',()=>orbit.setAuto(!orbit.auto));
+on('b-explode',()=>animateTo(explodeT>0.5?0:1));
+const sl=document.getElementById('explode');if(sl)sl.addEventListener('input',e=>{if(tween){cancelAnimationFrame(tween);tween=null;}setExplode(e.target.value/100);const b=document.getElementById('b-explode');if(b)b.textContent=explodeT>0.5?'◀ Reassemble':'▶ Explode';});
+
+if(initGL()){build();if(location.hash==='#exploded'){setExplode(1);orbit.setAuto(false);orbit.gt=2.4;orbit.theta=2.4;}let last=performance.now();(function loop(now){const dt=Math.min(0.05,(now-last)/1000);last=now;orbit.update(dt);renderer.render(scene,camera);requestAnimationFrame(loop);})(last);}
+})();
+
+</script>
+</body></html>

@@ -1,0 +1,6 @@
+(fp_lib_table
+	(version 7)
+	(lib (name "nRF54LM20A")(type "KiCad")(uri "${KIPRJMOD}/lib/nRF54LM20A.pretty")(options "")(descr "nRF54LM20A BGA98 footprint (exported from the official DK)"))
+	(lib (name "ext")(type "KiCad")(uri "${KIPRJMOD}/lib/ext/ext.pretty")(options "")(descr "real footprints pulled from LCSC via easyeda2kicad (CH334F/USB-C/AP2112K)"))
+	(lib (name "nordic")(type "KiCad")(uri "${KIPRJMOD}/lib/nordic.pretty")(options "")(descr "footprints extracted from the official Nordic board (SMA connector/USB ESD/common-mode choke/ferrite bead)"))
+)

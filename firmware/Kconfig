@@ -1,0 +1,48 @@
+# Application-level Kconfig.
+#
+# Pulls in the SAMPLE_USBD_* options required by Zephyr's official USB init
+# helper (sample_usbd_init.c) -- these options themselves `depends on
+# USB_DEVICE_STACK_NEXT`, so they are only visible on nRF54L (new UDC stack)
+# builds and have no effect on nRF52 (legacy stack) builds.
+source "$(ZEPHYR_BASE)/samples/subsys/usb/common/Kconfig.sample_usbd"
+
+# ---- Three-node coordination strategy (design §3.4: who follows after catching CONNECT_IND) ----
+choice
+	prompt "Three-node follow strategy"
+	default TRI_STRATEGY_SELF
+	help
+	  Each of the three boards guards one advertising channel; how the follow
+	  work is divided after catching CONNECT_IND.
+
+config TRI_STRATEGY_SELF
+	bool "A Self-follow (the board that caught it follows, recommended)"
+	help
+	  The board that caught the anchor follows directly, zero coordination
+	  latency. No redundancy or load balancing -- the simplest and most stable.
+
+config TRI_STRATEGY_HANDOFF
+	bool "B Handoff (the catching board hands the connection to its downstream neighbor)"
+	help
+	  The catching board passes the connection parameters over the inter-chip
+	  SPI to a less busy neighbor to follow, for load balancing.
+	  Takeover following (inject) is board bring-up work.
+
+config TRI_STRATEGY_DEDUP
+	bool "C Redundancy (multiple boards follow together, host dedups)"
+	help
+	  After catching, broadcast the handoff so multiple boards follow the same
+	  connection to improve weak-signal capture rate; the host dedups by (AA,CRC,PDU).
+
+endchoice
+
+config SNIFFER_DEFAULT_TARGET_MAC
+	string "Default target MAC at boot (empty = no filtering)"
+	default ""
+	help
+	  In the form aa:bb:cc:dd:ee:ff (display order, most significant byte first).
+	  Lets you follow just this one target even without a host
+	  (single-target mode + advertising filter, same as filling in the target MAC
+	  in Wireshark). Overridden by HOST_CMD_SET_TARGET once a host connects.
+	  Mainly for host-less single-board testing / standalone operation.
+
+source "Kconfig.zephyr"

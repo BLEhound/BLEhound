@@ -1,0 +1,40 @@
+# BLEhound — west manifest (T2 "freestanding application" topology)
+#
+# All dependencies come from the official Nordic GitHub repos (NCS).
+# BLEhound itself is the manifest repo + application; nrf / zephyr / ... are
+# pulled by `west update` into the workspace top level (BLEhound's parent).
+#
+# Setup (see firmware/README.md):
+#     mkdir blehound-ws && cd blehound-ws
+#     git clone https://github.com/BLEhound/BLEhound
+#     west init -l BLEhound
+#     west update
+#     west zephyr-export
+#
+# Keep the workspace path free of spaces (Zephyr/west/cmake dislike them).
+# Change the NCS version by editing `revision` below (currently v3.4.0).
+
+manifest:
+  version: "1.0"
+
+  remotes:
+    - name: nordicsemi
+      url-base: https://github.com/nrfconnect
+
+  projects:
+    - name: nrf
+      remote: nordicsemi
+      repo-path: sdk-nrf
+      revision: v3.4.0
+      import:
+        # Exclude simulation/test toolchains this app never builds (they are
+        # large — net-tools especially). Delete a line if you later need it.
+        name-blocklist:
+          - cmock
+          - bsim
+          - edtt
+          - net-tools
+          - nrf_hw_models
+
+  self:
+    path: BLEhound

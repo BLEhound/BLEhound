@@ -1,0 +1,4 @@
+# Wireshark extcap + multi-channel aggregator
+pyserial>=3.5
+# Only needed for host/security (legacy-pairing analysis, decryption helpers)
+cryptography>=41.0

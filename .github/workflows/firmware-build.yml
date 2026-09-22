@@ -1,0 +1,33 @@
+name: firmware-build
+
+on:
+  push:
+    paths: ["firmware/**", "west.yml", ".github/workflows/firmware-build.yml"]
+  pull_request:
+    paths: ["firmware/**", "west.yml"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ghcr.io/nrfconnect/sdk-nrf-toolchain:v3.4.0
+    steps:
+      - name: Checkout into workspace
+        uses: actions/checkout@v4
+        with:
+          path: BLEhound
+
+      - name: west init + update
+        run: |
+          west init -l BLEhound
+          west update --narrow -o=--depth=1
+          west zephyr-export
+
+      - name: Build (nRF54LM20A dongle)
+        run: |
+          west build -b nrf54lm20dk/nrf54lm20a/cpuapp -s BLEhound/firmware -d build_dongle \
+            -- -DEXTRA_CONF_FILE=boards/blehound.conf \
+               -DEXTRA_DTC_OVERLAY_FILE=boards/blehound.overlay
+
+      - name: Build (nRF52840)
+        run: west build -b nrf52840dk/nrf52840 -s BLEhound/firmware -d build_52840

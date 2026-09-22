@@ -1,0 +1,845 @@
+(kicad_sch
+	(version 20260306)
+	(generator "blehound")
+	(generator_version "10.0")
+	(uuid "141dacfd-e55b-4345-8518-fd852348ee2d")
+	(paper "A3")
+	(title_block
+		(title "blehound (root)")
+		(date "2026-08-13")
+		(rev "A1")
+	)
+	(lib_symbols
+		(symbol "blehound:R"
+			(pin_numbers (hide yes))(pin_names (offset 0.508))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "R" (at 0 3.81 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "R" (at 0 -3.81 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "R_1_1"
+				(rectangle (start -2.54 1.27)(end 2.54 -1.27)(stroke (width 0.254)(type default))(fill (type none)))
+				(pin passive line (at -5.08 0.0 0)(length 2.54)(name "1" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 5.08 0.0 180)(length 2.54)(name "2" (effects (font (size 1.016 1.016))))(number "2" (effects (font (size 1.016 1.016)))))
+			)
+		)
+		(symbol "blehound:L"
+			(pin_numbers (hide yes))(pin_names (offset 0.508))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "L" (at 0 3.81 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "L" (at 0 -3.81 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "L_1_1"
+				(rectangle (start -2.54 1.27)(end 2.54 -1.27)(stroke (width 0.254)(type default))(fill (type none)))
+				(pin passive line (at -5.08 0.0 0)(length 2.54)(name "1" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 5.08 0.0 180)(length 2.54)(name "2" (effects (font (size 1.016 1.016))))(number "2" (effects (font (size 1.016 1.016)))))
+			)
+		)
+		(symbol "blehound:XTAL"
+			(pin_numbers (hide yes))(pin_names (offset 0.508))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "Y" (at 0 3.81 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "XTAL" (at 0 -3.81 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "XTAL_1_1"
+				(rectangle (start -2.54 1.27)(end 2.54 -1.27)(stroke (width 0.254)(type default))(fill (type none)))
+				(pin passive line (at -5.08 0.0 0)(length 2.54)(name "1" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 5.08 0.0 180)(length 2.54)(name "2" (effects (font (size 1.016 1.016))))(number "2" (effects (font (size 1.016 1.016)))))
+			)
+		)
+		(symbol "blehound:C"
+			(pin_numbers (hide yes))(pin_names (offset 0.508))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "C" (at 0 3.81 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "C" (at 0 -3.81 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "C_1_1"
+				(rectangle (start -1.27 2.54)(end 1.27 -2.54)(stroke (width 0.254)(type default))(fill (type none)))
+				(pin passive line (at 0.0 -5.08 90)(length 2.54)(name "1" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 0.0 5.08 270)(length 2.54)(name "2" (effects (font (size 1.016 1.016))))(number "2" (effects (font (size 1.016 1.016)))))
+			)
+		)
+		(symbol "blehound:LED"
+			(pin_numbers (hide yes))(pin_names (offset 0.508))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "D" (at 0 3.81 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "LED" (at 0 -3.81 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "LED_1_1"
+				(rectangle (start -1.27 2.54)(end 1.27 -2.54)(stroke (width 0.254)(type default))(fill (type none)))
+				(pin passive line (at 0.0 -5.08 90)(length 2.54)(name "1" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 0.0 5.08 270)(length 2.54)(name "2" (effects (font (size 1.016 1.016))))(number "2" (effects (font (size 1.016 1.016)))))
+			)
+		)
+		(symbol "blehound:SW"
+			(pin_numbers (hide yes))(pin_names (offset 0.508))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "SW" (at 0 3.81 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "SW" (at 0 -3.81 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "SW_1_1"
+				(rectangle (start -1.27 2.54)(end 1.27 -2.54)(stroke (width 0.254)(type default))(fill (type none)))
+				(pin passive line (at 0.0 -5.08 90)(length 2.54)(name "1" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 0.0 5.08 270)(length 2.54)(name "2" (effects (font (size 1.016 1.016))))(number "2" (effects (font (size 1.016 1.016)))))
+			)
+		)
+		(symbol "blehound:TVS"
+			(pin_numbers (hide yes))(pin_names (offset 0.508))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "D" (at 0 3.81 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "TVS" (at 0 -3.81 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "TVS_1_1"
+				(rectangle (start -1.27 2.54)(end 1.27 -2.54)(stroke (width 0.254)(type default))(fill (type none)))
+				(pin passive line (at 0.0 -5.08 90)(length 2.54)(name "1" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 0.0 5.08 270)(length 2.54)(name "2" (effects (font (size 1.016 1.016))))(number "2" (effects (font (size 1.016 1.016)))))
+			)
+		)
+		(symbol "blehound:ANT_PAD"
+			(pin_numbers (hide yes))(pin_names (offset 0.508))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "AE" (at 0 3.81 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "ANT_PAD" (at 0 -3.81 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "ANT_PAD_1_1"
+				(rectangle (start -1.27 1.27)(end 1.27 -1.27)(stroke (width 0.254)(type default))(fill (type none)))
+				(pin passive line (at 0 -5.08 90)(length 2.54)(name "1" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+			)
+		)
+		(symbol "blehound:MOUNT"
+			(pin_numbers (hide yes))(pin_names (offset 0.508))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "H" (at 0 3.81 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "MOUNT" (at 0 -3.81 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "MOUNT_1_1"
+				(circle (center 0 0)(radius 1.27)(stroke (width 0.254)(type default))(fill (type none)))
+				(circle (center 0 0)(radius 0.5)(stroke (width 0.2)(type default))(fill (type none)))
+			)
+		)
+		(symbol "blehound:COAX_SWF"
+			(pin_names (offset 0.508))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "J" (at 0 7.62 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "COAX_SWF" (at 0 -7.62 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "COAX_SWF_1_1"
+				(rectangle (start -3.0 5.08)(end 3.0 -5.08)(stroke (width 0.254)(type default))(fill (type none)))
+				(pin passive line (at 5.54 2.54 180)(length 2.54)(name "1" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 5.54 0.0 180)(length 2.54)(name "2" (effects (font (size 1.016 1.016))))(number "2" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 5.54 -2.54 180)(length 2.54)(name "3" (effects (font (size 1.016 1.016))))(number "3" (effects (font (size 1.016 1.016)))))
+			)
+		)
+		(symbol "blehound:COAX_SMA"
+			(pin_names (offset 0.508))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "J" (at 0 6.35 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "COAX_SMA" (at 0 -6.35 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "COAX_SMA_1_1"
+				(rectangle (start -3.0 3.81)(end 3.0 -3.81)(stroke (width 0.254)(type default))(fill (type none)))
+				(pin passive line (at 5.54 1.27 180)(length 2.54)(name "1" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 5.54 -1.27 180)(length 2.54)(name "2" (effects (font (size 1.016 1.016))))(number "2" (effects (font (size 1.016 1.016)))))
+			)
+		)
+		(symbol "blehound:XTAL4"
+			(pin_names (offset 0.508))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "Y" (at 0 8.89 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "XTAL4" (at 0 -8.89 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "XTAL4_1_1"
+				(rectangle (start -3.0 6.35)(end 3.0 -6.35)(stroke (width 0.254)(type default))(fill (type none)))
+				(pin passive line (at 5.54 3.81 180)(length 2.54)(name "1" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 5.54 1.27 180)(length 2.54)(name "2" (effects (font (size 1.016 1.016))))(number "2" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 5.54 -1.27 180)(length 2.54)(name "3" (effects (font (size 1.016 1.016))))(number "3" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 5.54 -3.81 180)(length 2.54)(name "4" (effects (font (size 1.016 1.016))))(number "4" (effects (font (size 1.016 1.016)))))
+			)
+		)
+		(symbol "blehound:SB_BRIDGE"
+			(pin_names (offset 0.508))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "SB" (at 0 6.35 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "SB_BRIDGE" (at 0 -6.35 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "SB_BRIDGE_1_1"
+				(rectangle (start -3.0 3.81)(end 3.0 -3.81)(stroke (width 0.254)(type default))(fill (type none)))
+				(pin passive line (at 5.54 1.27 180)(length 2.54)(name "1" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 5.54 -1.27 180)(length 2.54)(name "2" (effects (font (size 1.016 1.016))))(number "2" (effects (font (size 1.016 1.016)))))
+			)
+		)
+		(symbol "blehound:NRF21540"
+			(pin_names (offset 0.508))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "U" (at 0 25.4 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "NRF21540" (at 0 -25.4 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "NRF21540_1_1"
+				(rectangle (start -12.0 22.86)(end 12.0 -22.86)(stroke (width 0.254)(type default))(fill (type none)))
+				(pin passive line (at 14.54 20.32 180)(length 2.54)(name "GND" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 14.54 17.78 180)(length 2.54)(name "ANT1" (effects (font (size 1.016 1.016))))(number "2" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 14.54 15.24 180)(length 2.54)(name "ANT2" (effects (font (size 1.016 1.016))))(number "3" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 14.54 12.7 180)(length 2.54)(name "MODE" (effects (font (size 1.016 1.016))))(number "4" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 14.54 10.16 180)(length 2.54)(name "VDD" (effects (font (size 1.016 1.016))))(number "5" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 14.54 7.620000000000001 180)(length 2.54)(name "VDD" (effects (font (size 1.016 1.016))))(number "6" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 14.54 5.08 180)(length 2.54)(name "RX_EN" (effects (font (size 1.016 1.016))))(number "7" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 14.54 2.539999999999999 180)(length 2.54)(name "ANT_SEL" (effects (font (size 1.016 1.016))))(number "8" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 14.54 0.0 180)(length 2.54)(name "TX_EN" (effects (font (size 1.016 1.016))))(number "9" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 14.54 -2.539999999999999 180)(length 2.54)(name "ANT" (effects (font (size 1.016 1.016))))(number "10" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 14.54 -5.079999999999998 180)(length 2.54)(name "PDN" (effects (font (size 1.016 1.016))))(number "11" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 14.54 -7.620000000000001 180)(length 2.54)(name "SCK" (effects (font (size 1.016 1.016))))(number "12" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 14.54 -10.16 180)(length 2.54)(name "MOSI" (effects (font (size 1.016 1.016))))(number "13" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 14.54 -12.700000000000003 180)(length 2.54)(name "MISO" (effects (font (size 1.016 1.016))))(number "14" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 14.54 -15.240000000000002 180)(length 2.54)(name "CSN" (effects (font (size 1.016 1.016))))(number "15" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 14.54 -17.78 180)(length 2.54)(name "GND" (effects (font (size 1.016 1.016))))(number "16" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 14.54 -20.32 180)(length 2.54)(name "EP" (effects (font (size 1.016 1.016))))(number "17" (effects (font (size 1.016 1.016)))))
+			)
+		)
+		(symbol "blehound:USB2_HUB_4PORT"
+			(pin_names (offset 1.016))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "U" (at -20.0 13.969999999999999 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "USB2_HUB_4PORT" (at -20.0 -13.969999999999999 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "USB2_HUB_4PORT_1_1"
+				(rectangle (start -20.0 11.43)(end 20.0 -11.43)(stroke (width 0.254)(type default))(fill (type background)))
+				(pin passive line (at -22.54 5.08 0)(length 2.54)(name "VBUS" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at -22.54 2.54 0)(length 2.54)(name "VDD33" (effects (font (size 1.016 1.016))))(number "2" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at -22.54 0.0 0)(length 2.54)(name "UP_DP" (effects (font (size 1.016 1.016))))(number "3" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at -22.54 -2.54 0)(length 2.54)(name "UP_DM" (effects (font (size 1.016 1.016))))(number "4" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at -22.54 -5.08 0)(length 2.54)(name "RESET_N" (effects (font (size 1.016 1.016))))(number "5" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 22.54 7.62 180)(length 2.54)(name "DN1_DP" (effects (font (size 1.016 1.016))))(number "6" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 22.54 5.08 180)(length 2.54)(name "DN1_DM" (effects (font (size 1.016 1.016))))(number "7" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 22.54 2.54 180)(length 2.54)(name "DN2_DP" (effects (font (size 1.016 1.016))))(number "8" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 22.54 0.0 180)(length 2.54)(name "DN2_DM" (effects (font (size 1.016 1.016))))(number "9" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 22.54 -2.54 180)(length 2.54)(name "DN3_DP" (effects (font (size 1.016 1.016))))(number "10" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 22.54 -5.079999999999999 180)(length 2.54)(name "DN3_DM" (effects (font (size 1.016 1.016))))(number "11" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 22.54 -7.62 180)(length 2.54)(name "GND" (effects (font (size 1.016 1.016))))(number "12" (effects (font (size 1.016 1.016)))))
+			)
+		)
+		(symbol "blehound:USBC_UP"
+			(pin_names (offset 1.016))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "J" (at -14.0 10.16 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "USBC_UP" (at -14.0 -10.16 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "USBC_UP_1_1"
+				(rectangle (start -14.0 7.62)(end 14.0 -7.62)(stroke (width 0.254)(type default))(fill (type background)))
+				(pin passive line (at -16.54 2.54 0)(length 2.54)(name "VBUS" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at -16.54 0.0 0)(length 2.54)(name "CC1" (effects (font (size 1.016 1.016))))(number "2" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at -16.54 -2.54 0)(length 2.54)(name "CC2" (effects (font (size 1.016 1.016))))(number "3" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 16.54 3.81 180)(length 2.54)(name "DP" (effects (font (size 1.016 1.016))))(number "4" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 16.54 1.27 180)(length 2.54)(name "DM" (effects (font (size 1.016 1.016))))(number "5" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 16.54 -1.27 180)(length 2.54)(name "SHIELD" (effects (font (size 1.016 1.016))))(number "6" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 16.54 -3.81 180)(length 2.54)(name "GND" (effects (font (size 1.016 1.016))))(number "7" (effects (font (size 1.016 1.016)))))
+			)
+		)
+		(symbol "blehound:LDO_3V3"
+			(pin_names (offset 1.016))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "U" (at -13.0 8.89 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "LDO_3V3" (at -13.0 -8.89 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "LDO_3V3_1_1"
+				(rectangle (start -13.0 6.35)(end 13.0 -6.35)(stroke (width 0.254)(type default))(fill (type background)))
+				(pin passive line (at -15.54 2.54 0)(length 2.54)(name "VIN" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at -15.54 0.0 0)(length 2.54)(name "EN" (effects (font (size 1.016 1.016))))(number "2" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at -15.54 -2.54 0)(length 2.54)(name "GND" (effects (font (size 1.016 1.016))))(number "3" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 15.54 0.0 180)(length 2.54)(name "VOUT" (effects (font (size 1.016 1.016))))(number "4" (effects (font (size 1.016 1.016)))))
+			)
+		)
+		(symbol "blehound:ESD_USB2"
+			(pin_names (offset 1.016))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "D" (at -13.0 8.89 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "ESD_USB2" (at -13.0 -8.89 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "ESD_USB2_1_1"
+				(rectangle (start -13.0 6.35)(end 13.0 -6.35)(stroke (width 0.254)(type default))(fill (type background)))
+				(pin passive line (at -15.54 2.54 0)(length 2.54)(name "IN_P" (effects (font (size 1.016 1.016))))(number "6" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at -15.54 0.0 0)(length 2.54)(name "VBUS" (effects (font (size 1.016 1.016))))(number "5" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at -15.54 -2.54 0)(length 2.54)(name "IN_N" (effects (font (size 1.016 1.016))))(number "4" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 15.54 2.54 180)(length 2.54)(name "OUT_P" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 15.54 0.0 180)(length 2.54)(name "GND" (effects (font (size 1.016 1.016))))(number "2" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 15.54 -2.54 180)(length 2.54)(name "OUT_N" (effects (font (size 1.016 1.016))))(number "3" (effects (font (size 1.016 1.016)))))
+			)
+		)
+		(symbol "blehound:CMC_2LINE"
+			(pin_names (offset 1.016))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "L" (at -12.0 7.62 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "CMC_2LINE" (at -12.0 -7.62 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "CMC_2LINE_1_1"
+				(rectangle (start -12.0 5.08)(end 12.0 -5.08)(stroke (width 0.254)(type default))(fill (type background)))
+				(pin passive line (at -14.54 1.27 0)(length 2.54)(name "IN_P" (effects (font (size 1.016 1.016))))(number "2" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at -14.54 -1.27 0)(length 2.54)(name "IN_N" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 14.54 1.27 180)(length 2.54)(name "OUT_P" (effects (font (size 1.016 1.016))))(number "3" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 14.54 -1.27 180)(length 2.54)(name "OUT_N" (effects (font (size 1.016 1.016))))(number "4" (effects (font (size 1.016 1.016)))))
+			)
+		)
+		(symbol "blehound:DEBUG_ETM_HDR"
+			(pin_names (offset 1.016))(exclude_from_sim no)(in_bom yes)(on_board yes)
+			(property "Reference" "J" (at -15.0 11.43 0)(effects (font (size 1.27 1.27))))
+			(property "Value" "DEBUG_ETM_HDR" (at -15.0 -11.43 0)(effects (font (size 1.27 1.27))))
+			(property "Footprint" "" (at 0 0 0)(effects (font (size 1.27 1.27))(hide yes)))
+			(symbol "DEBUG_ETM_HDR_1_1"
+				(rectangle (start -15.0 8.89)(end 15.0 -8.89)(stroke (width 0.254)(type default))(fill (type background)))
+				(pin passive line (at -17.54 5.08 0)(length 2.54)(name "VCC" (effects (font (size 1.016 1.016))))(number "1" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at -17.54 2.54 0)(length 2.54)(name "GND" (effects (font (size 1.016 1.016))))(number "3" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at -17.54 0.0 0)(length 2.54)(name "SWCLK" (effects (font (size 1.016 1.016))))(number "5" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at -17.54 -2.54 0)(length 2.54)(name "SWDIO" (effects (font (size 1.016 1.016))))(number "7" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at -17.54 -5.08 0)(length 2.54)(name "nRESET" (effects (font (size 1.016 1.016))))(number "9" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 17.54 5.08 180)(length 2.54)(name "TRACECLK" (effects (font (size 1.016 1.016))))(number "2" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 17.54 2.54 180)(length 2.54)(name "TD0_SWO" (effects (font (size 1.016 1.016))))(number "4" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 17.54 0.0 180)(length 2.54)(name "TD1" (effects (font (size 1.016 1.016))))(number "6" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 17.54 -2.54 180)(length 2.54)(name "TD2" (effects (font (size 1.016 1.016))))(number "8" (effects (font (size 1.016 1.016)))))
+				(pin passive line (at 17.54 -5.08 180)(length 2.54)(name "TD3" (effects (font (size 1.016 1.016))))(number "10" (effects (font (size 1.016 1.016)))))
+			)
+		)
+(symbol "blehound:CH334F_C5187527"
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "U"
+      (id 0)
+      (at 0 22.86 0)
+      (effects (font (size 1.27 1.27) ) )
+    )
+    (property
+      "Value"
+      "CH334F_C5187527"
+      (id 1)
+      (at 0 -20.32 0)
+      (effects (font (size 1.27 1.27) ) )
+    )
+    (property
+      "Footprint"
+      "ext:QFN-24_L4.0-W4.0-P0.50-BL-EP2.8"
+      (id 2)
+      (at 0 -22.86 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "Datasheet"
+      "https://www.lcsc.com/datasheet/C5187527.pdf"
+      (id 3)
+      (at 0 -25.40 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "Manufacturer"
+      "WCH (Nanjing Qinheng)"
+      (id 4)
+      (at 0 -27.94 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "MPN"
+      "CH334F"
+      (id 5)
+      (at 0 -30.48 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "LCSC Part"
+      "C5187527"
+      (id 6)
+      (at 0 -33.02 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "ki_keywords"
+      "USB ICs"
+      (id 8)
+      (at 0 -35.56 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (symbol "CH334F_C5187527_0_1"
+      (rectangle
+        (start -15.24 15.24)
+        (end 15.24 -17.78)
+        (stroke (width 0) (type default))
+        (fill (type background))
+      )
+      (circle
+        (center -13.97 13.97)
+        (radius 0.38)
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (pin unspecified line
+        (at 0.00 17.78 270)
+        (length 2.54)
+        (name "GND" (effects (font (size 1.27 1.27))))
+        (number "25" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 17.78 12.70 180)
+        (length 2.54)
+        (name "~{PWREN}" (effects (font (size 1.27 1.27))))
+        (number "24" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 17.78 10.16 180)
+        (length 2.54)
+        (name "LED2" (effects (font (size 1.27 1.27))))
+        (number "23" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 17.78 7.62 180)
+        (length 2.54)
+        (name "LED1" (effects (font (size 1.27 1.27))))
+        (number "22" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 17.78 5.08 180)
+        (length 2.54)
+        (name "LED4/SDA" (effects (font (size 1.27 1.27))))
+        (number "21" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 17.78 2.54 180)
+        (length 2.54)
+        (name "VDD33" (effects (font (size 1.27 1.27))))
+        (number "20" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 17.78 -0.00 180)
+        (length 2.54)
+        (name "V5" (effects (font (size 1.27 1.27))))
+        (number "19" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 17.78 -2.54 180)
+        (length 2.54)
+        (name "PSELF" (effects (font (size 1.27 1.27))))
+        (number "18" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 17.78 -5.08 180)
+        (length 2.54)
+        (name "NC" (effects (font (size 1.27 1.27))))
+        (number "17" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 17.78 -7.62 180)
+        (length 2.54)
+        (name "~{RESET}/CDP" (effects (font (size 1.27 1.27))))
+        (number "16" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 17.78 -10.16 180)
+        (length 2.54)
+        (name "DPU" (effects (font (size 1.27 1.27))))
+        (number "15" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 17.78 -12.70 180)
+        (length 2.54)
+        (name "DMU" (effects (font (size 1.27 1.27))))
+        (number "14" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 17.78 -15.24 180)
+        (length 2.54)
+        (name "LED3/SCL" (effects (font (size 1.27 1.27))))
+        (number "13" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -17.78 -15.24 0)
+        (length 2.54)
+        (name "DP1" (effects (font (size 1.27 1.27))))
+        (number "12" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -17.78 -12.70 0)
+        (length 2.54)
+        (name "DM1" (effects (font (size 1.27 1.27))))
+        (number "11" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -17.78 -10.16 0)
+        (length 2.54)
+        (name "DP2" (effects (font (size 1.27 1.27))))
+        (number "10" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -17.78 -7.62 0)
+        (length 2.54)
+        (name "DM2" (effects (font (size 1.27 1.27))))
+        (number "9" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -17.78 -5.08 0)
+        (length 2.54)
+        (name "DP3" (effects (font (size 1.27 1.27))))
+        (number "8" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -17.78 -2.54 0)
+        (length 2.54)
+        (name "DM3" (effects (font (size 1.27 1.27))))
+        (number "7" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -17.78 -0.00 0)
+        (length 2.54)
+        (name "DP4" (effects (font (size 1.27 1.27))))
+        (number "6" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -17.78 2.54 0)
+        (length 2.54)
+        (name "DM4" (effects (font (size 1.27 1.27))))
+        (number "5" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -17.78 5.08 0)
+        (length 2.54)
+        (name "XI" (effects (font (size 1.27 1.27))))
+        (number "4" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -17.78 7.62 0)
+        (length 2.54)
+        (name "XO" (effects (font (size 1.27 1.27))))
+        (number "3" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -17.78 10.16 0)
+        (length 2.54)
+        (name "NC." (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -17.78 12.70 0)
+        (length 2.54)
+        (name "~{OVCUR}" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+    )
+  )
+(symbol "blehound:TYPE-C-31-M-12"
+			(pin_numbers (hide yes))
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "USBC"
+      (id 0)
+      (at 0 19.05 0)
+      (effects (font (size 1.27 1.27) ) )
+    )
+    (property
+      "Value"
+      "TYPE-C-31-M-12"
+      (id 1)
+      (at 0 -19.05 0)
+      (effects (font (size 1.27 1.27) ) )
+    )
+    (property
+      "Footprint"
+      "ext:USB-C_SMD-TYPE-C-31-M-12_1"
+      (id 2)
+      (at 0 -21.59 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "Datasheet"
+      "https://lcsc.com/product-detail/USB-Type-C_Korean-Hroparts-Elec-TYPE-C-31-M-12_C165948.html"
+      (id 3)
+      (at 0 -24.13 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "Manufacturer"
+      "Hanyoung (Korea)"
+      (id 4)
+      (at 0 -26.67 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "MPN"
+      "TYPE-C-31-M-12"
+      (id 5)
+      (at 0 -29.21 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "LCSC Part"
+      "C165948"
+      (id 6)
+      (at 0 -31.75 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "ki_keywords"
+      "USB Connectors"
+      (id 8)
+      (at 0 -34.29 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (symbol "TYPE-C-31-M-12_0_1"
+      (rectangle
+        (start -3.81 16.51)
+        (end 8.89 -16.51)
+        (stroke (width 0) (type default))
+        (fill (type background))
+      )
+      (pin unspecified line
+        (at -6.35 13.97 0)
+        (length 2.54)
+        (name "GND" (effects (font (size 1.27 1.27))))
+        (number "A1B12" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -6.35 11.43 0)
+        (length 2.54)
+        (name "VBUS" (effects (font (size 1.27 1.27))))
+        (number "A4B9" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -6.35 8.89 0)
+        (length 2.54)
+        (name "SBU2" (effects (font (size 1.27 1.27))))
+        (number "B8" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -6.35 6.35 0)
+        (length 2.54)
+        (name "CC1" (effects (font (size 1.27 1.27))))
+        (number "A5" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -6.35 3.81 0)
+        (length 2.54)
+        (name "DN2" (effects (font (size 1.27 1.27))))
+        (number "B7" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -6.35 1.27 0)
+        (length 2.54)
+        (name "DP1" (effects (font (size 1.27 1.27))))
+        (number "A6" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -6.35 -1.27 0)
+        (length 2.54)
+        (name "DN1" (effects (font (size 1.27 1.27))))
+        (number "A7" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -6.35 -3.81 0)
+        (length 2.54)
+        (name "DP2" (effects (font (size 1.27 1.27))))
+        (number "B6" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -6.35 -6.35 0)
+        (length 2.54)
+        (name "SBU1" (effects (font (size 1.27 1.27))))
+        (number "A8" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -6.35 -8.89 0)
+        (length 2.54)
+        (name "CC2" (effects (font (size 1.27 1.27))))
+        (number "B5" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -6.35 -11.43 0)
+        (length 2.54)
+        (name "VBUS" (effects (font (size 1.27 1.27))))
+        (number "B4A9" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -6.35 -13.97 0)
+        (length 2.54)
+        (name "GND" (effects (font (size 1.27 1.27))))
+        (number "B1A12" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 11.43 -6.35 180)
+        (length 2.54)
+        (name "EH" (effects (font (size 1.27 1.27))))
+        (number "4" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 11.43 -8.89 180)
+        (length 2.54)
+        (name "EH" (effects (font (size 1.27 1.27))))
+        (number "3" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 11.43 -11.43 180)
+        (length 2.54)
+        (name "EH" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 11.43 -13.97 180)
+        (length 2.54)
+        (name "EH" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+    )
+  )
+(symbol "blehound:AP2112K-3.3TRG1"
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "U"
+      (id 0)
+      (at 0 7.62 0)
+      (effects (font (size 1.27 1.27) ) )
+    )
+    (property
+      "Value"
+      "AP2112K-3.3TRG1"
+      (id 1)
+      (at 0 -7.62 0)
+      (effects (font (size 1.27 1.27) ) )
+    )
+    (property
+      "Footprint"
+      "ext:SOT-25-5_L2.9-W1.6-P0.95-LS2.8-BL"
+      (id 2)
+      (at 0 -10.16 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "Datasheet"
+      "https://lcsc.com/product-detail/Low-Dropout-Regulators-LDO_DIODES_AP2112K-3-3TRG1_AP2112K-3-3TRG1_C51118.html"
+      (id 3)
+      (at 0 -12.70 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "Manufacturer"
+      "DIODES Incorporated"
+      (id 4)
+      (at 0 -15.24 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "MPN"
+      "AP2112K-3.3TRG1"
+      (id 5)
+      (at 0 -17.78 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "LCSC Part"
+      "C51118"
+      (id 6)
+      (at 0 -20.32 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "ki_keywords"
+      "Linear Voltage Regulators (LDO)"
+      (id 8)
+      (at 0 -22.86 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (symbol "AP2112K-3.3TRG1_0_1"
+      (rectangle
+        (start -10.16 5.08)
+        (end 10.16 -5.08)
+        (stroke (width 0) (type default))
+        (fill (type background))
+      )
+      (circle
+        (center -8.89 3.81)
+        (radius 0.38)
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (pin unspecified line
+        (at -12.70 2.54 0)
+        (length 2.54)
+        (name "VIN" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -12.70 -0.00 0)
+        (length 2.54)
+        (name "GND" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -12.70 -2.54 0)
+        (length 2.54)
+        (name "EN" (effects (font (size 1.27 1.27))))
+        (number "3" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 12.70 -2.54 180)
+        (length 2.54)
+        (name "NC" (effects (font (size 1.27 1.27))))
+        (number "4" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 12.70 2.54 180)
+        (length 2.54)
+        (name "VOUT" (effects (font (size 1.27 1.27))))
+        (number "5" (effects (font (size 1.27 1.27))))
+      )
+    )
+  )
+	)
+	(sheet
+		(at 20 35)
+		(size 100 54)
+		(fields_autoplaced yes)
+		(stroke (width 0.1524) (type solid))
+		(fill (color 0 0 0 0.0000))
+		(uuid "f35e437c-5ca2-46e1-8c73-14b5bb02b225")
+		(property "Sheetname" "Node A (ch37)" (at 20 34.3 0)(effects (font (size 1.8 1.8)) (justify left bottom)))
+		(property "Sheetfile" "node_a.kicad_sch" (at 20 89.6 0)(effects (font (size 1.0 1.0)) (justify left top)))
+		(instances
+			(project "blehound"
+				(path "/141dacfd-e55b-4345-8518-fd852348ee2d" (page "2"))
+			)
+		)
+	)
+	(sheet
+		(at 155 35)
+		(size 100 54)
+		(fields_autoplaced yes)
+		(stroke (width 0.1524) (type solid))
+		(fill (color 0 0 0 0.0000))
+		(uuid "db793a3b-5fc6-426b-86ef-042097de2b84")
+		(property "Sheetname" "Node B (ch38)" (at 155 34.3 0)(effects (font (size 1.8 1.8)) (justify left bottom)))
+		(property "Sheetfile" "node_b.kicad_sch" (at 155 89.6 0)(effects (font (size 1.0 1.0)) (justify left top)))
+		(instances
+			(project "blehound"
+				(path "/141dacfd-e55b-4345-8518-fd852348ee2d" (page "3"))
+			)
+		)
+	)
+	(sheet
+		(at 290 35)
+		(size 100 54)
+		(fields_autoplaced yes)
+		(stroke (width 0.1524) (type solid))
+		(fill (color 0 0 0 0.0000))
+		(uuid "d2efad82-ea67-4dbe-8bfb-b1e36fa428dd")
+		(property "Sheetname" "Node C (ch39)" (at 290 34.3 0)(effects (font (size 1.8 1.8)) (justify left bottom)))
+		(property "Sheetfile" "node_c.kicad_sch" (at 290 89.6 0)(effects (font (size 1.0 1.0)) (justify left top)))
+		(instances
+			(project "blehound"
+				(path "/141dacfd-e55b-4345-8518-fd852348ee2d" (page "4"))
+			)
+		)
+	)
+	(sheet
+		(at 20 150)
+		(size 100 54)
+		(fields_autoplaced yes)
+		(stroke (width 0.1524) (type solid))
+		(fill (color 0 0 0 0.0000))
+		(uuid "0239452f-b641-43c5-8bff-101f7feb2484")
+		(property "Sheetname" "Baseboard (USB hub / USB-C / Power / SYNC)" (at 20 149.3 0)(effects (font (size 1.8 1.8)) (justify left bottom)))
+		(property "Sheetfile" "board.kicad_sch" (at 20 204.6 0)(effects (font (size 1.0 1.0)) (justify left top)))
+		(instances
+			(project "blehound"
+				(path "/141dacfd-e55b-4345-8518-fd852348ee2d" (page "5"))
+			)
+		)
+	)
+	(text "blehound — 3x nRF54LM20 synchronized multi-channel sniffer (real parts; SoC/RF/footprints from the official DK)" (exclude_from_sim no) (at 20 10 0) (effects (font (size 2.2 2.2)) (justify left top)) (uuid "be3f261e-899d-420a-8783-fce1ca23d63e"))
+	(text "4 sub-sheets: Node A/B/C (each has SoC + RF + on-board antenna, guarding advertising channels 37/38/39) + Baseboard (USB/power). Double-click a block to enter." (exclude_from_sim no) (at 20 120 0) (effects (font (size 1.8 1.8)) (justify left top)) (uuid "5dcf63c8-332f-4500-8c73-9b2aecfbb1c6"))
+	(text "Inter-board SPI: independent point-to-point pairs, no shared bus. 3 edges of the triangle: A master-B slave / B master-C slave / C master-A slave;" (exclude_from_sim no) (at 20 240 0) (effects (font (size 1.8 1.8)) (justify left top)) (uuid "c963d946-afe3-46c7-8990-f5d060253df2"))
+	(text "Each board has 2 SPI ports (one master, one slave); each link adds a REQ line so the slave end can actively ask the master to read;" (exclude_from_sim no) (at 20 252 0) (effects (font (size 1.8 1.8)) (justify left top)) (uuid "014ef95a-4e1c-414d-8998-0f2a81addf0a"))
+	(text "Each link always has exactly one master => zero arbitration. SYNC open-drain + 4.7k + shared GND; strap hard-codes the channel." (exclude_from_sim no) (at 20 264 0) (effects (font (size 1.8 1.8)) (justify left top)) (uuid "45ab2734-9e4b-4306-8c5d-d93fb9028d3e"))
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+	(embedded_fonts no)
+)
