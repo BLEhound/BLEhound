@@ -8,6 +8,8 @@
 
 Firmware · Wireshark host tools · open hardware
 
+<img src="hardware/case/case_exploded.gif" width="520" alt="BLEhound — exploded view of the 3D-printed case: lid, PCB, tray">
+
 📖 Full documentation: **https://blehound.github.io**
 
 </div>
@@ -20,6 +22,9 @@ like connection following, encrypted-link capture, and **three-radio synchronize
 multi-channel** capture possible. It ships as a complete package: firmware, a
 Wireshark `extcap` plugin, and open hardware (JLCEDA Pro source, Gerbers, BOM, 3D-printed
 case).
+
+> **Built with AI.** BLEhound's hardware schematic design, and the software (firmware
+> and Wireshark host tooling) development and debugging, were done entirely by AI.
 
 ## What makes it different
 

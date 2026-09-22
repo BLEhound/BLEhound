@@ -5,6 +5,10 @@
 外形 75 × 65 × 19.6 mm，两件：底壳 + 盖板。4 颗 M3 从底面拧入，顶面只有 4 个 LED 孔。
 分模线放在 SMA-KWE 螺纹轴心（板面上 6.0 mm），三个 SMA 孔上下各半圆；USB-C 走后墙 9.8 × 4.0 缺口。
 
+![BLEhound 外壳爆炸装配：盖板、PCB、底壳](case_exploded.gif)
+
+*爆炸图（OpenSCAD 渲染）：盖板在上（带浮雕 logo 与 LED 孔）、PCB 居中、带 USB-C 缺口的底壳在下。想拖动查看 3D，打开 [`BLEhound_case_A_3D.html`](BLEhound_case_A_3D.html)。*
+
 ## 1. 目录里的文件
 
 | 文件 | 用途 |
@@ -15,6 +19,7 @@
 | `blehound_lid.stl` / `blehound_lid.3mf` | 盖板模型，已翻面（顶面贴床，螺柱朝上），75 × 65 × 12.0 |
 | `blehound_case_A.scad` | OpenSCAD 参数化源码，改参数后重出模型 |
 | `preview_*.png` | OpenSCAD 渲染图：装配 / 爆炸 / 底壳 / 盖板打印姿态 |
+| `case_exploded.gif` | 上方的爆炸装配动画 |
 | `BLEhound_case_A_3D.html` | 方案页离线版：3D 拆解动画、图纸、复查清单（3D 需联网取 three.js） |
 | `README.zh-CN.md` | 本文件 |
 

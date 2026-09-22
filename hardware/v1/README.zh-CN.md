@@ -60,6 +60,20 @@ nRF54LM20A 上 P2 是唯一没有 GPIOTE 实例的 GPIO 口,做不了边沿捕�
 
 ### 飞线返工(J3/J6/J9 共 11 根)
 
+**正面俯视** —— 从顶面焊照此图:
+
+![V1 顶面飞线图:SYNC pin10 总线 + pin8 跳线、strap pin4/pin6](img/flywire_top.zh.svg)
+
+**翻到底面(焊接面)** —— 同样的接线从底面看:
+
+![V1 底面焊线图](img/flywire_bottom.zh.svg)
+
+<details><summary>2×5 排针针脚参考(pin1 在右下角)</summary>
+
+![J3/J6/J9 排针针脚](img/pinout.zh.svg)
+
+</details>
+
 要用的信号都引到了 2×5 SWD 调试排针(J3=U1、J6=U2、J9=U3),且落在**有** GPIOTE 的 P0/P1 脚上。重新分配:
 
 | 排针 pin | 信号 | 球位 | 用途 |

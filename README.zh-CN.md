@@ -8,6 +8,8 @@
 
 固件 · Wireshark 主机工具 · 开放硬件
 
+<img src="hardware/case/case_exploded.gif" width="520" alt="BLEhound 外壳爆炸图：盖板、PCB、底壳">
+
 📖 完整文档：**https://blehound.github.io**
 
 </div>
@@ -20,6 +22,8 @@ BLEhound 是一款完全从零构建的 BLE 嗅探器。其射频寄存器由我
 （three-radio synchronized multi-channel）抓包这样的深度特性成为可能。它以完整
 套件的形式交付：固件、一个 Wireshark `extcap` 插件，以及开放硬件（JLCEDA 源文件、
 Gerber、BOM、3D 打印外壳）。
+
+> **由 AI 完成。** 本项目的硬件原理图设计,以及软件(固件与 Wireshark 主机工具)的开发与调试,均由 AI 完成。
 
 ## 与众不同之处
 

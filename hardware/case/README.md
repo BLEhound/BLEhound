@@ -8,6 +8,10 @@ SMA-KWE thread axis (6.0 mm above the board face), so each of the three SMA hole
 a half-circle split top and bottom; USB-C exits through a 9.8 × 4.0 cutout in the
 rear wall.
 
+![Exploded assembly of the BLEhound case: lid, PCB, tray](case_exploded.gif)
+
+*Exploded view (OpenSCAD render): the lid on top with the embossed logo and LED holes, the PCB in the middle, and the tray with the USB-C cutout below. For a draggable 3D view open [`BLEhound_case_A_3D.html`](BLEhound_case_A_3D.html).*
+
 ## 1. Files in this directory
 
 | File | Purpose |
@@ -18,6 +22,7 @@ rear wall.
 | `blehound_lid.stl` / `blehound_lid.3mf` | Lid model, already flipped (top face on the bed, bosses up), 75 × 65 × 12.0 |
 | `blehound_case_A.scad` | OpenSCAD parametric source — change parameters and re-export the models |
 | `preview_*.png` | OpenSCAD renders: assembled / exploded / tray / lid print orientation |
+| `case_exploded.gif` | Exploded-assembly animation shown above |
 | `BLEhound_case_A_3D.html` | Offline version of the design page: 3D exploded animation, drawings, review checklist (the 3D view fetches three.js online) |
 | `README.md` | This file |
 

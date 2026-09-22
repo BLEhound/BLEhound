@@ -93,6 +93,20 @@ is broken.
 
 ### Flying-wire rework (11 wires on J3/J6/J9)
 
+**Front, top view** — solder from the top per this diagram:
+
+![V1 top-side flying-wire diagram: SYNC pin10 bus + pin8 jumpers, straps on pin4/pin6](img/flywire_top.en.svg)
+
+**Board flipped, bottom (solder) view** — the same wiring from underneath:
+
+![V1 bottom-side flying-wire diagram](img/flywire_bottom.en.svg)
+
+<details><summary>2×5 header pin reference (pin1 at bottom-right)</summary>
+
+![J3/J6/J9 header pinout](img/pinout.en.svg)
+
+</details>
+
 The needed signals are all brought out to the 2×5 SWD debug headers (J3=U1, J6=U2,
 J9=U3) and land on P0/P1 pins that **do** have GPIOTE. Reassignment:
 
