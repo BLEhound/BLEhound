@@ -16,8 +16,8 @@ rear wall.
 
 | File | Purpose |
 |---|---|
-| `blehound_case_P2S_PLA_0.2mm.gcode.3mf` | **Print directly** (Bambu P2S, PLA). Both parts on one plate, 55 min, 36.7 g |
-| `blehound_case_P2S_PETG_0.2mm.gcode.3mf` | **Print directly** (Bambu P2S, PETG). 57 min, 36.1 g |
+| `blehound_case_P2S_PLA_0.2mm.gcode.3mf` | **Print directly** (Bambu P2S, PLA). Both parts on one plate, ~62 min, ~34 g |
+| `blehound_case_P2S_PETG_0.2mm.gcode.3mf` | **Print directly** (Bambu P2S, PETG). ~65 min, ~36 g |
 | `blehound_tray.stl` / `blehound_tray.3mf` | Tray model, in print orientation (opening up), 75 × 65 × 13.6 |
 | `blehound_lid.stl` / `blehound_lid.3mf` | Lid model, already flipped (top face on the bed, bosses up), 75 × 65 × 12.0 |
 | `blehound_case_A.scad` | OpenSCAD parametric source — change parameters and re-export the models |

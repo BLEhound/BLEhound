@@ -13,8 +13,8 @@
 
 | 文件 | 用途 |
 |---|---|
-| `blehound_case_P2S_PLA_0.2mm.gcode.3mf` | **直接打印用**（拓竹 P2S，PLA）。两件同一块板，55 min，36.7 g |
-| `blehound_case_P2S_PETG_0.2mm.gcode.3mf` | **直接打印用**（拓竹 P2S，PETG）。57 min，36.1 g |
+| `blehound_case_P2S_PLA_0.2mm.gcode.3mf` | **直接打印用**（拓竹 P2S，PLA）。两件同一块板，约 62 min，约 34 g |
+| `blehound_case_P2S_PETG_0.2mm.gcode.3mf` | **直接打印用**（拓竹 P2S，PETG）。约 65 min，约 36 g |
 | `blehound_tray.stl` / `blehound_tray.3mf` | 底壳模型，打印姿态（开口朝上），75 × 65 × 13.6 |
 | `blehound_lid.stl` / `blehound_lid.3mf` | 盖板模型，已翻面（顶面贴床，螺柱朝上），75 × 65 × 12.0 |
 | `blehound_case_A.scad` | OpenSCAD 参数化源码，改参数后重出模型 |
