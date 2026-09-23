@@ -6,6 +6,14 @@
 3× **nRF54LM20A** + **nRF21540** FEM, made via JLCEDA / JLCPCB (project date
 2026-09-08). Everything in this folder describes that exact fabricated board.
 
+<div align="center">
+
+<img src="img/board_v1.jpg" width="360" alt="Assembled BLEhound V1 board — three nRF54LM20A + nRF21540 nodes, three SMA antennas, USB-C">
+
+<sub>The fabricated V1 board — three synchronized nodes (channels 37 / 38 / 39), USB-C host.</sub>
+
+</div>
+
 > ⚠️ **The as-fabricated V1 has two known pin-level defects** (see Known issues,
 > below) that break **three-board** mode. **Single-board sniffing works.** Do **not**
 > expect a plain V1 — or the unfinished [`../v2-wip/`](../v2-wip/) — to work in
