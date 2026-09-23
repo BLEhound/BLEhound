@@ -77,6 +77,9 @@ BLEhound/tools/install_extcap.sh      # copies the extcap into Wireshark
 # then open Wireshark → interface "nRF BLE Sniffer"
 ```
 
+> **Windows** works too — the host tools are cross-platform. Wireshark on Windows
+> needs the bundled `.bat` wrapper; see [host/README.md](host/README.md#windows).
+
 Full walkthrough (single-board and three-board): **https://blehound.github.io**
 
 ## Licensing

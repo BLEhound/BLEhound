@@ -49,7 +49,8 @@ case "$(uname)" in
 Darwin | Linux) ;;
 *)
 	echo "Error: this script only supports macOS / Linux."
-	echo "      On Windows, copy host/$PLUGIN_NAME into Wireshark's extcap directory;"
+	echo "      On Windows, copy host/nrf_sniffer_extcap.py, host/nrf_sniffer_extcap.bat and"
+	echo "      host/tri_aggregator.py into Wireshark's extcap directory;"
 	echo "      find the exact path in Wireshark: Help -> About Wireshark -> Folders -> Personal Extcap path"
 	exit 1
 	;;

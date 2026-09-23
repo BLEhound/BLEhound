@@ -73,6 +73,8 @@ BLEhound/tools/install_extcap.sh      # copies the extcap into Wireshark
 # then open Wireshark → interface "nRF BLE Sniffer"
 ```
 
+> **Windows** 同样支持 —— host 工具跨平台。Windows 上 Wireshark 需要随附的 `.bat` 包装器,见 [host/README.zh-CN.md](host/README.zh-CN.md#windows)。
+
 完整操作流程（单板与三板）：**https://blehound.github.io**
 
 ## 许可

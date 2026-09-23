@@ -20,8 +20,16 @@ west update                  # pulls NCS (nrf/zephyr/...) from official Nordic G
 west zephyr-export
 ```
 
+> **Windows:** get the toolchain from **nRF Connect for Desktop → Toolchain Manager**
+> (install NCS v3.4.0) and run these `west` commands in its bundled command prompt —
+> they are identical across macOS, Linux, and Windows.
+
 You also need a Zephyr SDK compatible with NCS v3.4.0 (1.0.1). Point to it with
 `ZEPHYR_SDK_INSTALL_DIR` if it is not auto-detected.
+
+> **Already have an NCS v3.4.0 workspace?** No need to re-download it — skip `west init`
+> / `west update` and point the build wrapper at your existing NCS:
+> `NCS_TOPDIR=/path/to/ncs BLEhound/tools/build.sh`.
 
 ## Build
 

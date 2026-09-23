@@ -8,6 +8,8 @@ Python tools that turn the sniffer's USB stream into Wireshark captures.
   plugin. Wireshark calls it to list interfaces/options and to stream packets.
   It opens the sniffer's USB serial port, de-frames (COBS), and writes PCAP
   (`LINKTYPE_BLUETOOTH_LE_LL_WITH_PHDR`) into the Wireshark fifo.
+- `nrf_sniffer_extcap.bat` — Windows wrapper: Wireshark on Windows runs `.exe`/`.bat`
+  extcap programs, not `.py` directly, so this launches the plugin via Python.
 - `tri_aggregator.py` — pure-logic module that time-aligns and merges three boards
   into one stream (`SyncClock` + `Aggregator` + `FollowRelay`). Runnable self-test:
   `python3 tri_aggregator.py --selftest`.
@@ -39,6 +41,21 @@ chmod +x ~/.local/lib/wireshark/extcap/nrf_sniffer_extcap.py
 
 Restart Wireshark. The interface list will show **nRF BLE Sniffer** (single board)
 and **nRF BLE Sniffer (3ch aggregated)** (three-board merged).
+
+### Windows
+
+Wireshark on Windows runs `.exe` / `.bat` extcap programs, not `.py` directly, so the
+bundled `.bat` wrapper is required:
+
+1. Install Python 3 (tick **Add python.exe to PATH**) and run `pip install pyserial`.
+2. Find the extcap folder in Wireshark: **Help → About Wireshark → Folders → Personal
+   Extcap path** (usually `%APPDATA%\Wireshark\extcap`).
+3. Copy **`nrf_sniffer_extcap.py`, `nrf_sniffer_extcap.bat`, and `tri_aggregator.py`**
+   into that folder, then restart Wireshark.
+
+The sniffer's serial ports appear as `COMx`; everything else works the same. If
+`python` is not on PATH, edit the `.bat` to use `py -3`. The `tools/*.sh` scripts are
+macOS/Linux only (use Git Bash or WSL if you want them on Windows).
 
 The USB identity the firmware advertises: VID `0x1915`, PID `0x520F`,
 product string `nRF BLE Sniffer`.

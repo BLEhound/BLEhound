@@ -8,6 +8,8 @@
   插件。Wireshark 调用它来列出接口/选项并串流数据包。它会打开嗅探器的 USB 串口，
   解帧（COBS），并把 PCAP（`LINKTYPE_BLUETOOTH_LE_LL_WITH_PHDR`）写入 Wireshark 的
   fifo。
+- `nrf_sniffer_extcap.bat` —— Windows 包装器:Windows 上 Wireshark 只跑 `.exe`/`.bat`,
+  不直接跑 `.py`,所以由它用 Python 启动插件。
 - `tri_aggregator.py` —— 纯逻辑模块，把三块板做时间对齐并合并成单一数据流
   （`SyncClock` + `Aggregator` + `FollowRelay`）。可运行自测：
   `python3 tri_aggregator.py --selftest`。
@@ -39,6 +41,16 @@ chmod +x ~/.local/lib/wireshark/extcap/nrf_sniffer_extcap.py
 
 重启 Wireshark。接口列表中会出现 **nRF BLE Sniffer**（单板）和
 **nRF BLE Sniffer (3ch aggregated)**(三板合并)。
+
+### Windows
+
+Windows 上 Wireshark 只执行 `.exe` / `.bat` 形式的 extcap,不直接跑 `.py`,所以必须用随附的 `.bat` 包装器:
+
+1. 装 Python 3(勾选 **Add python.exe to PATH**),执行 `pip install pyserial`。
+2. 在 Wireshark 里找 extcap 目录:**帮助 → 关于 Wireshark → 文件夹 → Personal Extcap path**(通常是 `%APPDATA%\Wireshark\extcap`)。
+3. 把 **`nrf_sniffer_extcap.py`、`nrf_sniffer_extcap.bat`、`tri_aggregator.py`** 三个文件复制进该目录,重启 Wireshark。
+
+嗅探器的串口在 Windows 上显示为 `COMx`,其余用法完全相同。若 `python` 不在 PATH,把 `.bat` 里的 `python` 改成 `py -3`。`tools/*.sh` 脚本仅限 macOS/Linux(Windows 上想用可走 Git Bash / WSL)。
 
 固件对外声明的 USB 标识：VID `0x1915`、PID `0x520F`，产品字符串
 `nRF BLE Sniffer`。
