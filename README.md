@@ -40,6 +40,54 @@ case).
 - **Doubles as a low-cost BLE RF test bench.** See the docs — the same hardware can
   drive relative/golden-referenced production RF checks.
 
+## Feature support (BLE 4.0 → 6.x)
+
+Most mainstream link-layer features from BLE 4.0 to 6.x are covered, with an honest boundary on what any sniffer can and cannot recover:
+
+| Feature | Status |
+|---|---|
+| **Advertising & connection following (BLE 4.x)** | |
+| Legacy advertising capture (all PDUs) | ✓ |
+| `CONNECT_IND` follow + CSA #1 hopping | ✓ |
+| Channel-map update (`LL_CHANNEL_MAP_IND`) | ✓ |
+| Connection-parameter update (`LL_CONNECTION_UPDATE_IND`) | ✓ |
+| Peripheral latency / supervision-timeout loss detection | ✓ |
+| Connection termination (`LL_TERMINATE_IND`) | ✓ |
+| Encrypted-link follow (ciphertext streamed) | ✓ |
+| Inject LTK → decrypt in Wireshark | ✓ |
+| Legacy pairing passive crack (TK → STK) | ✓ |
+| **PHY & extended advertising (BLE 5.0)** | |
+| 1M PHY | ✓ |
+| 2M PHY + switch (`LL_PHY_UPDATE_IND`) | ✓ |
+| Coded PHY S2/S8 (auto-detect) | ✓ |
+| Asymmetric PHY (per-packet within an event) | ✓ |
+| CSA #2 hopping | ✓ |
+| Extended-advertising AUX chains | ✓ |
+| Connection via extended adv (`AUX_CONNECT_REQ`) | ✓ |
+| Periodic-advertising sync (`AUX_SYNC_IND`) | ✓ |
+| **LE Audio & periodic (BLE 5.1–5.4)** | |
+| BIS broadcast isochronous stream | ✓ |
+| CIS connected isochronous stream | ✓ |
+| CIS termination (`LL_CIS_TERMINATE_IND`) | ◐ |
+| Connection subrating (5.3) | ✓ |
+| PAwR subevent 0 + response slots (5.4) | ✓ |
+| PAwR all subevents captured | ◐ |
+| PAST — periodic sync transfer | ◐ |
+| **Latest features (BLE 6.0–6.2)** | |
+| Frame-space negotiation (6.0) | ✓ |
+| Short connection interval, down to 375 µs (6.2) | ✓ |
+| Decision-based advertising filtering (6.0) | ✓ |
+| Channel Sounding negotiation PDUs streamed | ✓ |
+| Dedicated parsing of new 6.3 LL PDUs | ✗ |
+| **Encryption & cracking boundary** | |
+| Encrypted-link decryption (known LTK) | ✓ |
+| LE Secure Connections key cracking | ✗ |
+| Plaintext of encrypted LL control PDUs | ✗ |
+| Channel Sounding ranging reconstruction | ✗ |
+| RPA resolution without an IRK | ✗ |
+
+**Legend:** ✓ verified on real hardware · ◐ code in place, hardware trigger pending · ✗ not supported / infeasible by design
+
 ## What it is honest about
 
 - As a **single board**, it is a capable sniffer alongside the excellent

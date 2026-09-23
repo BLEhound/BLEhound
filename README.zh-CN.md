@@ -38,6 +38,54 @@ Gerber、BOM、3D 打印外壳）。
 - **兼作低成本 BLE 射频测试台。** 详见文档 —— 同一套硬件即可驱动相对/黄金参考
   （relative/golden-referenced）的量产射频检查。
 
+## 特性支持（BLE 4.0 → 6.x）
+
+从 BLE 4.0 到 6.x，主流链路层特性基本都覆盖，并诚实标出任何 sniffer 能做与做不到的边界：
+
+| 特性 | 状态 |
+|---|---|
+| **广播与连接跟随（BLE 4.x）** | |
+| Legacy 广播抓取（全 PDU） | ✓ |
+| `CONNECT_IND` 起跟 + CSA #1 跳频 | ✓ |
+| 信道图更新（`LL_CHANNEL_MAP_IND`） | ✓ |
+| 连接参数更新（`LL_CONNECTION_UPDATE_IND`） | ✓ |
+| 从机延迟 / 监督超时判失联 | ✓ |
+| 连接终止（`LL_TERMINATE_IND`） | ✓ |
+| 加密链路续跟（密文上送） | ✓ |
+| 注入 LTK → Wireshark 解密 | ✓ |
+| Legacy 配对被动破解（TK → STK） | ✓ |
+| **PHY 与扩展广播（BLE 5.0）** | |
+| 1M PHY | ✓ |
+| 2M PHY + 切换（`LL_PHY_UPDATE_IND`） | ✓ |
+| Coded PHY S2/S8（自动识别） | ✓ |
+| 非对称 PHY（event 内逐包切） | ✓ |
+| CSA #2 跳频 | ✓ |
+| 扩展广播 AUX 链 | ✓ |
+| 经扩展广播建连（`AUX_CONNECT_REQ`） | ✓ |
+| 周期广播同步（`AUX_SYNC_IND`） | ✓ |
+| **LE Audio 与周期（BLE 5.1–5.4）** | |
+| BIS 广播等时流 | ✓ |
+| CIS 连接等时流 | ✓ |
+| CIS 终止（`LL_CIS_TERMINATE_IND`） | ◐ |
+| 连接子速率（5.3） | ✓ |
+| PAwR 子事件 0 + 响应槽（5.4） | ✓ |
+| PAwR 多子事件全抓 | ◐ |
+| PAST 周期同步传递 | ◐ |
+| **最新特性（BLE 6.0–6.2）** | |
+| 帧间距协商（6.0） | ✓ |
+| 短连接间隔，可到 375 µs（6.2） | ✓ |
+| 决策广播过滤（6.0） | ✓ |
+| Channel Sounding 协商 PDU 上送 | ✓ |
+| 6.3 全新 LL PDU 专门解析 | ✗ |
+| **加密与破解边界** | |
+| 加密链路解密（已知 LTK） | ✓ |
+| LE Secure Connections 密钥破解 | ✗ |
+| 加密后 LL 控制 PDU 明文 | ✗ |
+| Channel Sounding 测距还原 | ✗ |
+| RPA 随机地址解析（无 IRK） | ✗ |
+
+**图例：** ✓ 真机验证 · ◐ 代码有、真机待触发 · ✗ 不支持 / 原理做不到
+
 ## 它诚实交代的地方
 
 - 作为**单块板**，它是一款称职的嗅探器，与优秀的
