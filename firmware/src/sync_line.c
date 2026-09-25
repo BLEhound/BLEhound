@@ -98,7 +98,7 @@ int sync_line_init(sync_capture_cb_t on_capture)
 	} else {
 		/* Two pins (the finalized full-board scheme; the DK regression also jumpers two pins together): the output pin is open-drain, released high (wired-AND relies on the input pin's
 		 * internal pull-up or an external pull-up); the input pin carries the edge interrupt. The output pin **must not** have any GPIOTE channel, otherwise on
-		 * nRF54L GPIO writes get ignored by GPIOTE (see the blehound.overlay notes). */
+		 * nRF54L GPIO writes get ignored by GPIOTE (see the SYNC notes in boards/common/blehound_nrf54lm20a_cpuapp_common.dtsi). */
 		err = gpio_pin_configure_dt(&sync_out, GPIO_OUTPUT_INACTIVE | GPIO_OPEN_DRAIN |
 							   GPIO_ACTIVE_LOW);
 		if (err != 0) {

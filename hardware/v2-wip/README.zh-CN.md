@@ -18,7 +18,7 @@ V2 把 V1 的修正直接做进 PCB,**从而免飞线**。SYNC 和 strap 的固�
 | **FEM TX_EN / RX_EN / PDN** | P1.15 / P1.16 / P1.18 | 不变 | — |
 | **USB hub 供电**(CH334F PSELF) | 总线供电,PSELF(18 脚)悬空 | **自供电**(PSELF-SEL 网 + U8 AP2112K 本地 3V3) | 三颗 SoC + 三颗 FEM 超过 100 mA 总线供电默认额度 |
 
-只有 SYNC/strap 的**固件**引脚在 `boards/blehound.overlay` 里(两版共用);SPIM00 和 FEM 的挪位由 `boards/blehound_v2.overlay` 叠加(`tools/build.sh V2=1` 构建)。
+SYNC/strap 的**固件**引脚在 `boards/common/blehound_nrf54lm20a_cpuapp_common.dtsi` 里(两版共用);SPIM00 和 FEM 的挪位是 `boards/blehound_v2/` 板定义(`tools/build.sh V2=1` 构建)。
 
 **状态:布线未完成。** 原理图已带 V2 改动,但 PCB 尚未按其重新布线。物理布局仍是 V1(0908)那版;若干网络(SYNC、strap、MISO、hub PSELF)未布线,跑 DRC 会在"改了网但没重画铜"的地方报短路 / 未连接。
 

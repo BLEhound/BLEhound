@@ -1,0 +1,231 @@
+/*
+ * BLEhound board definition, derived from the Zephyr nRF54LM20 DK board
+ * (boards/nordic/nrf54lm20dk, Copyright (c) 2025 Nordic Semiconductor ASA).
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * Shared by every BLEhound board revision (blehound_v1, blehound_v2): what is identical on all three
+ * chips (A/B/C) and on both PCB revisions.
+ *   - SoC peripheral enables (trimmed to what the sniffer board actually has: no VCOM UART, buttons,
+ *     NFC, ADC, PWM, 802.15.4 or expansion header)
+ *   - ACT LED, strap / SYNC / inter-chip REQ+CS lines, and the aliases the firmware looks up
+ * Revision-specific pins (inter-chip SPIM00 pinctrl, nRF21540 FEM control port) live in each board's
+ * own .dts / -pinctrl.dtsi. Pin numbers below were verified pin by pin against the board netlist.
+ */
+
+#include <nordic/nrf54lm20_a_b_cpuapp.dtsi>
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	chosen {
+		zephyr,flash-controller = &rram_controller;
+		zephyr,flash = &cpuapp_rram;
+		zephyr,usb-bc12 = &usbhs_bc12;
+	};
+
+	/* ACT LED: P1.05 -> R -> green LED -> GND, lit on high. */
+	leds {
+		compatible = "gpio-leds";
+
+		led0: led_0 {
+			gpios = <&gpio1 5 GPIO_ACTIVE_HIGH>;
+			label = "ACT LED";
+		};
+	};
+
+	/*
+	 * strap: 2 GPIOs encoding board_id and the advertising channel guarded (design 4.5);
+	 * for how it is read see firmware/src/board_role.c.
+	 *   strap0 = TD0 = P1.08 (debug header pin4); strap1 = TD1 = P1.09 (header pin6). Both are right next
+	 *   to GND (pin3), so the jumpers are short.
+	 *   Input + pull-up: tied to GND reads 0, tied to 3V3 (pin1) reads 1 (floating also reads 1 via the
+	 *   internal pull-up, but both the first-batch flywire and the revised PCB tie to 3V3 explicitly).
+	 *   code = (strap1 << 1) | strap0, matching the board_role.c table:
+	 *     J3/U1 (A, code 00 -> guard 37): pin4->GND and pin6->GND
+	 *     J6/U2 (B, code 10 -> guard 38): pin4->GND, pin6->3V3
+	 *     J9/U3 (C, code 01 -> guard 39): pin6->GND, pin4->3V3
+	 *   Not wired: both read 1 (= 11, reserved), board_role falls back to id=0 guarding 37, so all three
+	 *   guard 37 (degenerates to single-chip, still captures).
+	 */
+	tri_straps {
+		compatible = "gpio-keys";
+		strap0: strap_0 {
+			gpios = <&gpio1 8 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <1>;
+		};
+		strap1: strap_1 {
+			gpios = <&gpio1 9 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <2>;
+		};
+	};
+
+	/*
+	 * SYNC sync line (design 5.2): one open-drain line shared by all three chips, two pins per chip:
+	 *   input  sync_in  = P0.04 = TD3 = header pin10 (gpio0/gpiote30, edge-interrupt capture for a shared time base)
+	 *   output sync_out = P0.03 = TD2 = header pin8  (open-drain drive-low, released normally; this pin **must not**
+	 *                     have any GPIOTE attached)
+	 *   pin8<->pin10 are joined on each chip (flywire jumper on V1, PCB trace on V2) and pin10 is bused across
+	 *   the three chips. No external pull-up; sync_in enables the internal pull-up (three in parallel ~4k, fine
+	 *   for the ~1Hz SYNC edges).
+	 * Why it can't be a single pin: on the nRF54L GPIOTE, as soon as a channel's IN event is configured on
+	 *   pin n, that pin's output value is updated only by GPIOTE and any write from the GPIO side is ignored;
+	 *   MODE=Disabled does not truly disconnect it either. Observed on real hardware 2026-09-19: a pin that
+	 *   had had an IN interrupt attached stayed permanently high on its pad after push-pull drive-low, while
+	 *   an identical pin that never had an interrupt attached pulled low normally. So capture and drive must
+	 *   be separate pins, joined externally.
+	 */
+	tri_sync {
+		compatible = "gpio-keys";
+		sync_in: sync_in {
+			gpios = <&gpio0 4 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			zephyr,code = <3>;
+		};
+		sync_out: sync_out {
+			gpios = <&gpio0 3 GPIO_ACTIVE_LOW>;
+			zephyr,code = <4>;
+		};
+	};
+
+	/*
+	 * Inter-chip link (design 4.2): per chip a downstream master port SPIM00 (pins in the board pinctrl) +
+	 * CS and two REQ lines:
+	 *   CS = P2.05 (GPIO, attached to spi_config at runtime by peer_link)
+	 *   REQ_IN (the downstream slave calling me) = P1.29; REQ_OUT (me calling the upstream master) = P1.02
+	 * The upstream slave port SPIS (P1.30/P1.31/P1.00/P1.01) is board bring-up work; peer_link does not
+	 * load SPIS yet, so it is not claimed here.
+	 */
+	tri_peer {
+		compatible = "gpio-keys";
+		peer_cs: peer_cs {
+			gpios = <&gpio2 5 GPIO_ACTIVE_LOW>;
+			zephyr,code = <5>;
+		};
+		req_in: req_in {
+			gpios = <&gpio1 29 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			zephyr,code = <6>;
+		};
+		req_out: req_out {
+			gpios = <&gpio1 2 GPIO_ACTIVE_LOW>;
+			zephyr,code = <7>;
+		};
+	};
+
+	aliases {
+		led0 = &led0;
+		tri-strap0 = &strap0;
+		tri-strap1 = &strap1;
+		tri-sync-in = &sync_in;
+		tri-sync-out = &sync_out;
+		tri-peer-cs = &peer_cs;
+		tri-req-in = &req_in;
+		tri-req-out = &req_out;
+		tri-peer-spi = &spi00;
+		/* nRF21540 FEM control port: the nodes are defined per board revision (pins moved on V2). */
+		fem-pdn = &fem_pdn;
+		fem-rxen = &fem_rxen;
+		fem-txen = &fem_txen;
+		fem-antsel = &fem_antsel;
+		fem-mode = &fem_mode;
+		fem-csn = &fem_csn;
+		fem-sck = &fem_sck;
+		fem-mosi = &fem_mosi;
+	};
+};
+
+&cpuapp_sram {
+	status = "okay";
+};
+
+&hfpll {
+	clock-frequency = <DT_FREQ_M(128)>;
+};
+
+/*
+ * The board has **no 32.768 kHz crystal** (XL1/XL2 = P1.00/P1.01 are used as inter-chip SPI GPIOs);
+ * LFCLK runs from the internal RC (CONFIG_CLOCK_CONTROL_NRF_K32SRC_RC in the board defconfig).
+ * The lfxo node values are inherited from the DK and unused.
+ */
+&lfxo {
+	load-capacitors = "internal";
+	load-capacitance-femtofarad = <17000>;
+};
+
+/* 32 MHz crystal: the radio timing depends on it. Load caps inherited from the DK design. */
+&hfxo {
+	load-capacitors = "internal";
+	load-capacitance-femtofarad = <15000>;
+};
+
+&vregmain {
+	status = "okay";
+	regulator-initial-mode = <NRF5X_REG_MODE_DCDC>;
+};
+
+&vregusb {
+	status = "okay";
+};
+
+&grtc {
+	owned-channels = <0 1 2 3 4 5 6 7 8 9 10 11>;
+	/* Channels 7-11 reserved for Zero Latency IRQs, 3-4 for FLPR */
+	child-owned-channels = <3 4 7 8 9 10 11>;
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&gpio2 {
+	status = "okay";
+};
+
+&gpio3 {
+	status = "okay";
+};
+
+&gpiote20 {
+	status = "okay";
+};
+
+&gpiote30 {
+	status = "okay";
+};
+
+&radio {
+	status = "okay";
+};
+
+&clock {
+	status = "okay";
+};
+
+/* On-chip temperature sensor: the LFRC calibration (K32SRC_RC_CALIBRATION) uses it to skip calibrations while the
+ * temperature is stable (CLOCK_CONTROL_NRF_USES_TEMP_SENSOR). */
+temp_sensor: &temp {
+	status = "okay";
+};
+
+/* USB-C data port (CDC ACM to the host); the CDC ACM function itself is added by the application (app.overlay). */
+zephyr_udc0: &usbhs {
+	status = "okay";
+};
+
+&usbhs_bc12 {
+	status = "okay";
+};
+
+/* Inter-chip downstream master port; pinctrl (spi00_default / spi00_sleep) comes from the board's -pinctrl.dtsi. */
+&spi00 {
+	status = "okay";
+	cs-gpios = <&gpio2 5 GPIO_ACTIVE_LOW>;
+	pinctrl-0 = <&spi00_default>;
+	pinctrl-1 = <&spi00_sleep>;
+	pinctrl-names = "default", "sleep";
+};

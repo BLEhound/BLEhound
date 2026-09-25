@@ -1,5 +1,5 @@
 /*
- * Generic devicetree overlay (board-independent part).
+ * Application devicetree overlay, applied on every board (there are no per-board app overlays).
  * Attaches a CDC ACM UART instance under the USB controller (zephyr_udc0),
  * for the firmware to use as a serial device -- this is the channel the host will
  * later use to read capture data.

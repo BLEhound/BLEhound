@@ -23,8 +23,8 @@ V2 by native routing. Concretely:
 | **FEM TX_EN / RX_EN / PDN** | P1.15 / P1.16 / P1.18 | unchanged | — |
 | **USB hub power** (CH334F PSELF) | bus-powered, PSELF (pin 18) floating | **self-powered** (PSELF-SEL net + local 3V3 from U8 AP2112K) | three SoCs + three FEMs exceed the 100 mA bus-power default |
 
-Only the SYNC/strap **firmware** pins live in `boards/blehound.overlay` (shared by both
-boards). The SPIM00 and FEM moves are applied on top by `boards/blehound_v2.overlay`
+The SYNC/strap **firmware** pins live in `boards/common/blehound_nrf54lm20a_cpuapp_common.dtsi` (shared by both
+boards). The SPIM00 and FEM moves are the `boards/blehound_v2/` board definition
 (build with `tools/build.sh V2=1`).
 
 **Status: routing NOT complete.** The schematic carries the V2 changes, but the PCB

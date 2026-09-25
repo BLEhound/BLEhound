@@ -2,5 +2,5 @@
 # (boards/nordic/nrf54lm20dk, Copyright (c) 2025 Nordic Semiconductor ASA).
 # SPDX-License-Identifier: Apache-2.0
 
-config BOARD_BLEHOUND
-	select SOC_NRF54LM20A_CPUAPP if BOARD_BLEHOUND_NRF54LM20A_CPUAPP
+config BOARD_BLEHOUND_V2
+	select SOC_NRF54LM20A_CPUAPP if BOARD_BLEHOUND_V2_NRF54LM20A_CPUAPP

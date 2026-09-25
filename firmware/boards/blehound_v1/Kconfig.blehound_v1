@@ -1,0 +1,6 @@
+# BLEhound board definition, derived from the Zephyr nRF54LM20 DK board
+# (boards/nordic/nrf54lm20dk, Copyright (c) 2025 Nordic Semiconductor ASA).
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_BLEHOUND_V1
+	select SOC_NRF54LM20A_CPUAPP if BOARD_BLEHOUND_V1_NRF54LM20A_CPUAPP

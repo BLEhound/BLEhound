@@ -30,10 +30,9 @@ west zephyr-export
 ## 构建
 
 ```bash
-# nRF54LM20A BLEhound (default board target)
-west build -b blehound/nrf54lm20a/cpuapp -s BLEhound/firmware \
-  -- -DBOARD_ROOT=. -DEXTRA_CONF_FILE=boards/blehound.conf \
-     -DEXTRA_DTC_OVERLAY_FILE=boards/blehound.overlay
+# BLEhound V1(首批板);板定义在 firmware/boards/blehound_v{1,2}/
+west build -b blehound_v1/nrf54lm20a/cpuapp -s BLEhound/firmware -- -DBOARD_ROOT=.
+# revised board (V2): -b blehound_v2/nrf54lm20a/cpuapp
 ```
 
 或使用便捷封装脚本（自动选择 overlay 和输出目录）：

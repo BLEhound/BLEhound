@@ -4,5 +4,5 @@
 
 # Inherited from the DK board definition: the nRF54LM20A build runs with the nRF54LM20B errata set
 # (SOC_NRF54LM20A_DEVELOP_IN_NRF54LM20B). Kept as-is so the board migration does not change firmware behaviour.
-config BOARD_BLEHOUND
+config BOARD_BLEHOUND_V1
 	select SOC_NRF54LM20A_DEVELOP_IN_NRF54LM20B if SOC_NRF54LM20A_CPUAPP

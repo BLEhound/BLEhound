@@ -1,0 +1,69 @@
+/*
+ * BLEhound board definition, derived from the Zephyr nRF54LM20 DK board
+ * (boards/nordic/nrf54lm20dk, Copyright (c) 2025 Nordic Semiconductor ASA).
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+
+#include <nordic/nrf54lm20a_cpuapp.dtsi>
+#include "../common/blehound_nrf54lm20a_cpuapp_common.dtsi"
+#include "pinctrl.dtsi"
+
+/ {
+	compatible = "blehound,blehound-v2-nrf54lm20a-cpuapp";
+	model = "BLEhound V2 nRF54LM20A Application MCU";
+
+	chosen {
+		zephyr,code-partition = &slot0_partition;
+		zephyr,sram = &cpuapp_sram;
+	};
+
+	/*
+	 * nRF21540 FEM control port (one per chip, pure GPIO, no SPI; for the rules see src/fem_ctrl.h).
+	 * V2 (revised board, plan B 2026-09-20): the four FEM SPI pins moved to the P1 port (datasheet same-port rule + NCS
+	 * requiring the PERI-domain spi2x with cs on P1): CSN=P1.19 SCK=P1.24 MOSI=P1.21 (MISO=P1.20, never touched in
+	 * pure-GPIO mode); MODE/ANTSEL moved to P0.08/P0.06, P0.07 freed. PDN=P1.18 RX_EN=P1.16 TX_EN=P1.15 unchanged.
+	 * SCK/MOSI are only parked (input pull-down) by fem_ctrl.
+	 */
+	tri_fem {
+		compatible = "gpio-keys";
+		fem_pdn: fem_pdn {
+			gpios = <&gpio1 18 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <8>;
+		};
+		fem_rxen: fem_rxen {
+			gpios = <&gpio1 16 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <9>;
+		};
+		fem_txen: fem_txen {
+			gpios = <&gpio1 15 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <10>;
+		};
+		fem_antsel: fem_antsel {
+			gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <11>;
+		};
+		fem_mode: fem_mode {
+			gpios = <&gpio0 8 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <12>;
+		};
+		/* Chip select is active low: fem_ctrl configures OUTPUT_INACTIVE = physical high = never selected. */
+		fem_csn: fem_csn {
+			gpios = <&gpio1 19 GPIO_ACTIVE_LOW>;
+			zephyr,code = <13>;
+		};
+		fem_sck: fem_sck {
+			gpios = <&gpio1 24 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <14>;
+		};
+		fem_mosi: fem_mosi {
+			gpios = <&gpio1 21 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <15>;
+		};
+	};
+};
+
+/* Include default memory partition configuration file */
+#include <vendor/nordic/nrf54lm20a_cpuapp_partition.dtsi>
