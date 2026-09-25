@@ -20,6 +20,7 @@
 
 #include "conn_follower.h"
 #include "scan_policy.h"
+#include "follow_policy.h"
 #include "ble_csa.h"
 #include "ble_ctrl_pdu.h"   /* Pure parsing of the 6.x new LL control PDUs (has host-side unit tests) */
 
@@ -559,24 +560,21 @@ static void start_following_on(const struct radio_packet *pkt, uint8_t phy,
 	if (find_slot_by_aa(aa) >= 0) {
 		return;   /* Already following this one, ignore the duplicate CONNECT_IND */
 	}
-	if (single_target_locked()) {
-		return;   /* Single-target mode: already following one, don't take a new one */
+
+	/* Follow policy: no target = observe only; target set = follow only that target (AdvA is at payload offset 6, after InitA). */
+	bool adva_matches = f.target_active;
+
+	for (int i = 0; adva_matches && i < 6; i++) {
+		adva_matches = p[2 + 6 + i] == f.target_mac[i];
+	}
+	if (!follow_policy_allows(g_single_target, f.target_active, adva_matches,
+				  conn_follower_active_connections())) {
+		return;
 	}
 
 	/* Tri-device claim gate: whether this device takes on following this connection (default policy A always true; policy B/C or deduplication may veto). */
 	if (g_claim_gate != NULL && !g_claim_gate(aa)) {
 		return;
-	}
-
-	/* Target filter: AdvA is at payload offset 6 (after InitA), i.e. pdu[8..13] */
-	if (f.target_active) {
-		const uint8_t *adva = &p[2 + 6];
-
-		for (int i = 0; i < 6; i++) {
-			if (adva[i] != f.target_mac[i]) {
-				return;
-			}
-		}
 	}
 
 	const uint16_t win_size = ll[7];
@@ -713,8 +711,9 @@ static void poll_inject(void)
 	if (interval_us == 0 || find_slot_by_aa(p.aa) >= 0) {
 		return;   /* Illegal, or this device already captured and is following it — ignore the relay */
 	}
-	if (single_target_locked()) {
-		return;   /* Single-target mode: already following another one, don't take the relay */
+	if (!follow_policy_allows_inject(g_single_target, f.target_active,
+					 conn_follower_active_connections())) {
+		return;   /* Single-target mode: no relay without a target, and none while already following another connection */
 	}
 
 	/* Advance from anchor0 to "the first event still in the future": when the relay arrives over USB, event0 (or more) may already have passed.

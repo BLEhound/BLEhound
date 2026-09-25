@@ -54,9 +54,10 @@
                                        *   crc_init(3) chan_map(5) hop(1) csa2(1) interval(2) latency(2)
                                        *   timeout(2) win_size(1) anchor0_us(4). anchor0_us is the event0
                                        *   anchor in µs on **this device's** TIMER time base. */
-#define HOST_CMD_SET_SINGLE_TARGET 0x87 /**< arg: 1 byte, nonzero = single-target mode (default on): once
-                                          *   a connection is being followed, stop scanning / accepting new
-                                          *   connections; 0 = multi-target evaluation mode */
+#define HOST_CMD_SET_SINGLE_TARGET 0x87 /**< arg: 1 byte, nonzero = single-target mode (default on): with no target set,
+                                          *   only scan advertising and follow no connection; with a target set, follow only
+                                          *   that target's connection and stop scanning / accepting new ones once following;
+                                          *   0 = multi-target evaluation mode, follow everything (up to 6) */
 
 /* ---- flags bits ---- */
 #define HOST_FLAG_CRC_OK      (1U << 0)  /**< CRC check passed */
