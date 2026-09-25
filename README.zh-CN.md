@@ -111,9 +111,8 @@ Gerber、BOM、3D 打印外壳）。
 # 1) 固件（在一个空的工作区目录中）
 git clone https://github.com/BLEhound/BLEhound
 west init -l BLEhound && west update && west zephyr-export
-west build -b blehound/nrf54lm20a/cpuapp -s BLEhound/firmware \
-  -- -DBOARD_ROOT=. -DEXTRA_CONF_FILE=boards/blehound.conf \
-     -DEXTRA_DTC_OVERLAY_FILE=boards/blehound.overlay
+west build -b blehound_v1/nrf54lm20a/cpuapp -s BLEhound/firmware -- -DBOARD_ROOT=.
+# revised board (V2): -b blehound_v2/nrf54lm20a/cpuapp
 west flash            # or: BLEhound/tools/flash.sh
 
 # 2) 主机插件

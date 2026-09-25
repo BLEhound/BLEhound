@@ -115,9 +115,8 @@ Most mainstream link-layer features from BLE 4.0 to 6.x are covered, with an hon
 # 1) Firmware (from an empty workspace directory)
 git clone https://github.com/BLEhound/BLEhound
 west init -l BLEhound && west update && west zephyr-export
-west build -b blehound/nrf54lm20a/cpuapp -s BLEhound/firmware \
-  -- -DBOARD_ROOT=. -DEXTRA_CONF_FILE=boards/blehound.conf \
-     -DEXTRA_DTC_OVERLAY_FILE=boards/blehound.overlay
+west build -b blehound_v1/nrf54lm20a/cpuapp -s BLEhound/firmware -- -DBOARD_ROOT=.
+# revised board (V2): -b blehound_v2/nrf54lm20a/cpuapp
 west flash            # or: BLEhound/tools/flash.sh
 
 # 2) Host plugin

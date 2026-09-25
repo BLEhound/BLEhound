@@ -1,0 +1,31 @@
+# BLEhound board definition, derived from the Zephyr nRF54LM20 DK board
+# (boards/nordic/nrf54lm20dk, Copyright (c) 2025 Nordic Semiconductor ASA).
+# SPDX-License-Identifier: Apache-2.0
+
+# Enable GPIO
+CONFIG_GPIO=y
+
+# Enable MPU
+CONFIG_ARM_MPU=y
+
+# MPU-based null-pointer dereferencing detection cannot
+# be applied as the (0x0 - 0x400) is unmapped for this target.
+CONFIG_NULL_POINTER_EXCEPTION_DETECTION_NONE=y
+
+# Enable Cache
+CONFIG_CACHE_MANAGEMENT=y
+CONFIG_EXTERNAL_CACHE=y
+
+# Start SYSCOUNTER on driver init
+CONFIG_NRF_GRTC_START_SYSCOUNTER=y
+
+# The board has no 32.768 kHz crystal (XL1/XL2 are used as inter-chip SPI GPIOs), so LFCLK must use the
+# internal RC. With the DK default K32SRC_XTAL the boot waits forever for the LFXO to start: GRTC won't run,
+# the kernel tick stops, and not a single log line appears. The +-500ppm accuracy only affects kernel timing;
+# radio scheduling uses the HF TIMER (32 MHz crystal) and is unaffected.
+CONFIG_CLOCK_CONTROL_NRF_K32SRC_RC=y
+CONFIG_CLOCK_CONTROL_NRF_K32SRC_500PPM=y
+
+# GPIOTE handler pool: SYNC (gpio0/gpiote30) + inter-chip REQ (gpio1/gpiote20) belong to two different gpiote
+# instances, each needing one event handler. The default of 1 is not enough.
+CONFIG_NRFX_GPIOTE_NUM_OF_EVT_HANDLERS=4

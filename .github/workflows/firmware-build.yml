@@ -23,8 +23,8 @@ jobs:
           west update --narrow -o=--depth=1
           west zephyr-export
 
-      - name: Build (BLEhound, nRF54LM20A)
-        run: |
-          west build -b blehound/nrf54lm20a/cpuapp -s BLEhound/firmware -d build_dongle \
-            -- -DBOARD_ROOT=. -DEXTRA_CONF_FILE=boards/blehound.conf \
-               -DEXTRA_DTC_OVERLAY_FILE=boards/blehound.overlay
+      - name: Build (BLEhound V1, first-batch board)
+        run: west build -b blehound_v1/nrf54lm20a/cpuapp -s BLEhound/firmware -d build_dongle -- -DBOARD_ROOT=.
+
+      - name: Build (BLEhound V2, revised board)
+        run: west build -b blehound_v2/nrf54lm20a/cpuapp -s BLEhound/firmware -d build_dongle_v2 -- -DBOARD_ROOT=.

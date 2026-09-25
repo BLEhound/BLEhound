@@ -2,9 +2,7 @@
 # (boards/nordic/nrf54lm20dk, Copyright (c) 2025 Nordic Semiconductor ASA).
 # SPDX-License-Identifier: Apache-2.0
 
-if BOARD_BLEHOUND_NRF54LM20A_CPUAPP
+board_runner_args(jlink "--device=nRF54LM20A_M33" "--speed=4000")
 
-config HW_STACK_PROTECTION
-	default ARCH_HAS_STACK_PROTECTION
-
-endif # BOARD_BLEHOUND_NRF54LM20A_CPUAPP
+include(${ZEPHYR_BASE}/boards/common/nrfutil.board.cmake)
+include(${ZEPHYR_BASE}/boards/common/jlink.board.cmake)

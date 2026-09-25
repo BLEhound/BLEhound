@@ -2,10 +2,10 @@
 # (boards/nordic/nrf54lm20dk, Copyright (c) 2025 Nordic Semiconductor ASA).
 # SPDX-License-Identifier: Apache-2.0
 #
-# Board target: blehound/nrf54lm20a/cpuapp (only the application core is supported).
+# Board target: blehound_v2/nrf54lm20a/cpuapp (only the application core is supported).
 board:
-  name: blehound
-  full_name: BLEhound (3x nRF54LM20A + nRF21540)
+  name: blehound_v2
+  full_name: BLEhound V2 (revised board)
   vendor: blehound
   socs:
   - name: nrf54lm20a
@@ -18,7 +18,7 @@ runners:
       run: first
       groups:
       - boards:
-        - blehound/nrf54lm20a/cpuapp
+        - blehound_v2/nrf54lm20a/cpuapp
     '--erase':
     - runners:
       - nrfjprog
@@ -27,7 +27,7 @@ runners:
       run: first
       groups:
       - boards:
-        - blehound/nrf54lm20a/cpuapp
+        - blehound_v2/nrf54lm20a/cpuapp
     '--reset':
     - runners:
       - nrfjprog
@@ -36,4 +36,4 @@ runners:
       run: last
       groups:
       - boards:
-        - blehound/nrf54lm20a/cpuapp
+        - blehound_v2/nrf54lm20a/cpuapp
