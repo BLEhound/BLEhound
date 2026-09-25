@@ -122,7 +122,7 @@ west flash            # or: BLEhound/tools/flash.sh
 
 # 2) Host plugin
 BLEhound/tools/install_extcap.sh      # copies the extcap into Wireshark
-# then open Wireshark → interface "nRF BLE Sniffer"
+# then open Wireshark → interface "BLEhound Sniffer"
 ```
 
 > **Windows** works too — the host tools are cross-platform. Wireshark on Windows

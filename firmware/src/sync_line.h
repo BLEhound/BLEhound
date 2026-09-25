@@ -3,7 +3,7 @@
  *
  * Whoever captures a CONNECT_IND (or on a periodic basis) calls sync_line_emit() to pull an edge; all three boards use a GPIO interrupt
  * to capture that edge's tick in **their own TIMER time base** (the same time base as radio_now_us), so the same physical event leaves
- * one tick in each of the three clocks → the host uses this to solve the cross-board clock offset and align the three timestamp streams (see tri_aggregator).
+ * one tick in each of the three clocks → the host uses this to solve the cross-board clock offset and align the three timestamp streams (see blehound_tri_aggregator).
  *
  * Implementation notes (relation to the design):
  *   Design §3.3 envisions **hardware capture** via "GPIOTE edge → DPPI → TIMER.CAPTURE" (zero software latency).

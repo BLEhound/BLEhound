@@ -1,5 +1,5 @@
 /*
- * nRF BLE Sniffer — firmware main program
+ * BLEhound Sniffer — firmware main program
  *
  * Data flow:
  *   RADIO IRQ --(copy & enqueue, non-blocking)--> k_msgq --> sniffer thread --> USB CDC --> Wireshark
@@ -418,7 +418,7 @@ K_THREAD_DEFINE(sniffer_tid, 2048, sniffer_thread, NULL, NULL, NULL,
 
 int main(void)
 {
-	LOG_INF("=== nRF BLE Sniffer starting ===");
+	LOG_INF("=== BLEhound Sniffer starting ===");
 
 	/* Read the strap at boot to decide the role — three devices run identical firmware, each guarding 37/38/39 via strap (scheme §4.5). */
 	g_role = board_role_read();

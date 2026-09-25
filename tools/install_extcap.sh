@@ -2,7 +2,7 @@
 #
 # One-command install of the extcap plugin into Wireshark.
 #
-# After installing, restart Wireshark and "nRF BLE Sniffer" will appear in the interface list.
+# After installing, restart Wireshark and "BLEhound Sniffer" will appear in the interface list.
 #
 # Usage:
 #   tools/install_extcap.sh            # install
@@ -11,8 +11,8 @@
 set -euo pipefail
 
 PROJ_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-PLUGIN="$PROJ_DIR/host/nrf_sniffer_extcap.py"
-PLUGIN_NAME="nrf_sniffer_extcap.py"
+PLUGIN="$PROJ_DIR/host/blehound_extcap.py"
+PLUGIN_NAME="blehound_extcap.py"
 
 #
 # Determine the extcap directory.
@@ -49,8 +49,8 @@ case "$(uname)" in
 Darwin | Linux) ;;
 *)
 	echo "Error: this script only supports macOS / Linux."
-	echo "      On Windows, copy host/nrf_sniffer_extcap.py, host/nrf_sniffer_extcap.bat and"
-	echo "      host/tri_aggregator.py into Wireshark's extcap directory;"
+	echo "      On Windows, copy host/blehound_extcap.py, host/blehound_extcap.bat and"
+	echo "      host/blehound_tri_aggregator.py into Wireshark's extcap directory;"
 	echo "      find the exact path in Wireshark: Help -> About Wireshark -> Folders -> Personal Extcap path"
 	exit 1
 	;;
@@ -90,10 +90,12 @@ if ! gui_env python3 -c "import serial" 2>/dev/null; then
 fi
 
 mkdir -p "$EXTCAP_DIR"
+# Remove copies left behind by the pre-rename names (nrf_sniffer_extcap.py / tri_aggregator.py), otherwise Wireshark lists the plugin twice.
+rm -f "$EXTCAP_DIR/nrf_sniffer_extcap.py" "$EXTCAP_DIR/nrf_sniffer_extcap.bat" "$EXTCAP_DIR/tri_aggregator.py"
 cp "$PLUGIN" "$EXTCAP_DIR/$PLUGIN_NAME"
-# The three-way merge logic lives in tri_aggregator.py in the same directory (the main script imports it), so it must
+# The three-way merge logic lives in blehound_tri_aggregator.py in the same directory (the main script imports it), so it must
 # be installed alongside, otherwise Wireshark hits an ImportError when calling --extcap-interfaces and lists no interfaces at all.
-cp "$(dirname "$PLUGIN")/tri_aggregator.py" "$EXTCAP_DIR/tri_aggregator.py"
+cp "$(dirname "$PLUGIN")/blehound_tri_aggregator.py" "$EXTCAP_DIR/blehound_tri_aggregator.py"
 chmod +x "$EXTCAP_DIR/$PLUGIN_NAME"
 echo "Installed -> $EXTCAP_DIR/$PLUGIN_NAME"
 
@@ -139,4 +141,4 @@ echo
 echo "== Done. Next:"
 echo "   1) Plug the USB cable into the board's port labeled 'nRF USB'"
 echo "   2) Restart Wireshark"
-echo "   3) Select 'nRF BLE Sniffer' in the interface list and double-click to start capturing"
+echo "   3) Select 'BLEhound Sniffer' in the interface list and double-click to start capturing"

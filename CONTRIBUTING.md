@@ -17,7 +17,7 @@ contributions span C, Python, and KiCad.
 
 - **Firmware:** nRF Connect SDK v3.4.0 via `west` (see [firmware/README.md](firmware/README.md)).
 - **Host:** Python 3.9+ with `pip install -r host/requirements.txt`. Run the
-  aggregator's self-test: `python3 host/tri_aggregator.py --selftest`.
+  aggregator's self-test: `python3 host/blehound_tri_aggregator.py --selftest`.
 
 ## Pull requests
 

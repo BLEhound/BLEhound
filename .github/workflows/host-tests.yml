@@ -17,6 +17,6 @@ jobs:
           python-version: "3.9"
       - run: pip install -r host/requirements.txt
       - name: Aggregator self-test
-        run: python3 host/tri_aggregator.py --selftest
+        run: python3 host/blehound_tri_aggregator.py --selftest
       - name: Byte-compile host scripts
-        run: python3 -m py_compile host/nrf_sniffer_extcap.py host/tri_aggregator.py
+        run: python3 -m py_compile host/blehound_extcap.py host/blehound_tri_aggregator.py
