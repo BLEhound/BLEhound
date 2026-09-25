@@ -340,7 +340,7 @@ static int sniffer_start(void)
 	/* Tri-device coordination: bring up the SYNC line + inter-board link, register the claim gate (policy per Kconfig, default self-follow). */
 	tri_coord_init(g_role.board_id);
 
-	LOG_INF("radio started: board_id=%u guarding channel %u, PHY 1M (auto-follow on CONNECT_IND capture)",
+	LOG_INF("radio started: board_id=%u guarding channel %u, PHY 1M (follows a connection only once a target MAC is set)",
 		g_role.board_id, active_channel);
 
 	return 0;
