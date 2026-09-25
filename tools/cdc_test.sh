@@ -25,18 +25,20 @@ set -euo pipefail
 # The identity declared by the firmware in prj.conf (CONFIG_USB_DEVICE_VID / _PID / _PRODUCT)
 readonly SNIFFER_VID="0x1915"
 readonly SNIFFER_PID="0x520F"
-readonly SNIFFER_PRODUCT="nRF BLE Sniffer"
+readonly SNIFFER_PRODUCT="BLEhound Sniffer"
 
 find_sniffer_port() {
     # macOS: first get the device subtree by USB product name, then pick the serial-port node from that subtree.
+    # Read ioreg to the end instead of awk-exiting on the first match: an early exit SIGPIPEs ioreg, and with pipefail + set -e
+    # the whole script then dies silently (seen with three boards attached).
     # Note you can't use `ioreg -c IOSerialBSDClient`: that plane has no "USB Product Name",
     # the product name lives on the parent USB node, and the two never appear in the same output.
     if [ "$(uname)" = "Darwin" ]; then
         ioreg -r -n "$SNIFFER_PRODUCT" -l -w 0 2>/dev/null \
             | awk '
-                /"IOCalloutDevice"/ {
+                /"IOCalloutDevice"/ && !done {
                     match($0, /"\/dev\/[^"]+"/)
-                    if (RSTART) { print substr($0, RSTART + 1, RLENGTH - 2); exit }
+                    if (RSTART) { print substr($0, RSTART + 1, RLENGTH - 2); done = 1 }
                 }'
         return
     fi

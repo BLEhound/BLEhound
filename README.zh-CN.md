@@ -118,7 +118,7 @@ west flash            # or: BLEhound/tools/flash.sh
 
 # 2) 主机插件
 BLEhound/tools/install_extcap.sh      # copies the extcap into Wireshark
-# then open Wireshark → interface "nRF BLE Sniffer"
+# then open Wireshark → interface "BLEhound Sniffer"
 ```
 
 > **Windows** 同样支持 —— host 工具跨平台。Windows 上 Wireshark 需要随附的 `.bat` 包装器,见 [host/README.zh-CN.md](host/README.zh-CN.md#windows)。

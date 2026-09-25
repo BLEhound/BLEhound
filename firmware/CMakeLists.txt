@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# nRF BLE Sniffer firmware top-level CMake
+# BLEhound Sniffer firmware top-level CMake
 # Note: this is a Zephyr / nRF Connect SDK "freestanding" application.
 #   - The build depends on an external NCS (provided via west); this repo does not contain the SDK itself.
 #   - For local builds see tools/build.sh; for open-source reproduction see west.yml + README in the repo root.

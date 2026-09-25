@@ -7,7 +7,7 @@ Responsibilities (design doc/2026-08-13-… §6):
   2. Aggregator — merge the three parsed packet streams by aligned time base, dedup by an (AA,CRC,PDU)
      window, and emit a single time-consistent, duplicate-free, ordered stream.
 
-The extcap main script (nrf_sniffer_extcap.py) does the actual multi-serial-port reading and feeds the
+The extcap main script (blehound_extcap.py) does the actual multi-serial-port reading and feeds the
 parsed dicts to this module; this module never touches serial/files and can self-test its pure logic with
 `--selftest`.
 
@@ -18,7 +18,7 @@ offset[b] = sync_epoch[b] - sync_epoch[ref], and subtracting offset from any boa
 the reference-board time base. With no SYNC observations it degrades to comparing each board's own ts
 directly (the §6 transitional form).
 
-Usage (self-test): python3 tri_aggregator.py --selftest
+Usage (self-test): python3 blehound_tri_aggregator.py --selftest
 """
 
 import os
@@ -392,7 +392,7 @@ def _mk_pkt(board_id, ts_us, sync_epoch, aa, crc, pdu):
 def _selftest_frame_ext():
     """Verify parse_frame correctly extracts the board_id / sync_epoch of a HOST_FLAG_TRI extended frame."""
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from nrf_sniffer_extcap import parse_frame, HOST_FRAME_PACKET, HOST_FLAG_TRI
+    from blehound_extcap import parse_frame, HOST_FRAME_PACKET, HOST_FLAG_TRI
 
     hdr = bytes([HOST_FRAME_PACKET, HOST_FLAG_TRI | 1])
     hdr += (1234).to_bytes(4, "little")
@@ -660,7 +660,7 @@ def _selftest_btle_rf_coded():
     LL_PHY_UPDATE_IND switched to Coded, every frame was Malformed).
     1M/2M frames carry no CI and are left as-is."""
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from nrf_sniffer_extcap import btle_rf_frame
+    from blehound_extcap import btle_rf_frame
 
     aa = 0x173E6971
     pdu = bytes([0x01, 0x00])          # Empty PDU
@@ -701,5 +701,5 @@ if __name__ == "__main__":
     if "--selftest" in sys.argv:
         _selftest()
     else:
-        sys.stderr.write("usage: tri_aggregator.py --selftest\n")
+        sys.stderr.write("usage: blehound_tri_aggregator.py --selftest\n")
         sys.exit(1)

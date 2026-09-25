@@ -10,8 +10,8 @@ fifo Wireshark gives us.
 Install (macOS / Linux):
 
     mkdir -p ~/.config/wireshark/extcap
-    cp nrf_sniffer_extcap.py ~/.config/wireshark/extcap/
-    chmod +x ~/.config/wireshark/extcap/nrf_sniffer_extcap.py
+    cp blehound_extcap.py ~/.config/wireshark/extcap/
+    chmod +x ~/.config/wireshark/extcap/blehound_extcap.py
 
 Then restart Wireshark and "BLEhound Sniffer" will appear in the interface list.
 
@@ -36,7 +36,7 @@ except ImportError:  # pragma: no cover - only triggered when the dependency is 
 # Three-way aggregation logic (SyncClock/Aggregator). Lives next to this script; the cwd is
 # unpredictable when Wireshark calls us, so add the script directory to sys.path before importing.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from tri_aggregator import Aggregator, FollowRelay, guard_channel_for_board   # noqa: E402
+from blehound_tri_aggregator import Aggregator, FollowRelay, guard_channel_for_board   # noqa: E402
 
 # The value for the aggregated interface — distinct from the per-serial-device paths
 TRI_AGGREGATED_IFACE = "tri-aggregated"
