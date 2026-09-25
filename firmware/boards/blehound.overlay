@@ -1,5 +1,5 @@
 /*
- * Real-board blehound pin mapping -- overlaid on nrf54lm20dk_nrf54lm20a_cpuapp.overlay,
+ * Real-board blehound pin mapping -- overlaid on blehound_nrf54lm20a_cpuapp.overlay,
  * replacing the DK placeholder pins with the full board's actual balls. All three chips A/B/C share the same numbers (verified pin by pin against the blehound netlist).
  * Goes with blehound.conf (LFRC); for usage see that file's header. The FEM pins written in the DK overlay are already the real-board balls, so they are left untouched here.
  *

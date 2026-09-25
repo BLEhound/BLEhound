@@ -9,7 +9,7 @@
 #
 # Usage:
 #   tools/build.sh                          # default: real board BLEhound (3x nRF54LM20A + nRF21540)
-#                                           #   = DK target nrf54lm20dk/nrf54lm20a/cpuapp
+#                                           #   = board target blehound/nrf54lm20a/cpuapp (firmware/boards/blehound/, BOARD_ROOT=firmware)
 #                                           #     + boards/blehound.{conf,overlay} (LFRC / real-board balls)
 #                                           #   output build_dongle/firmware/zephyr/zephyr.hex
 #   tools/build.sh -- --pristine            # real board, full rebuild
@@ -36,18 +36,19 @@ fi
 export ZEPHYR_SDK_INSTALL_DIR="${ZEPHYR_SDK_INSTALL_DIR:-$HOME/zephyr-sdk-1.0.1}"
 export ZEPHYR_TOOLCHAIN_VARIANT="${ZEPHYR_TOOLCHAIN_VARIANT:-zephyr}"
 
-# Real-board overlay layer on top of the nrf54lm20dk target (the only supported target); output goes to build_dongle/.
-BOARD="${1:-nrf54lm20dk/nrf54lm20a/cpuapp}"
+# Real-board overlay layer on top of the blehound board target (the only supported target); output goes to build_dongle/.
+# The board definition lives in firmware/boards/blehound/, so the firmware dir is passed as BOARD_ROOT.
+BOARD="${1:-blehound/nrf54lm20a/cpuapp}"
 if [ "${V2:-0}" = "1" ]; then
     BUILD_DIR="${BUILD_DIR:-$PROJ_DIR/build_dongle_v2}"
-    BLEHOUND_ARGS="-DEXTRA_CONF_FILE=boards/blehound.conf -DEXTRA_DTC_OVERLAY_FILE=boards/blehound.overlay;boards/blehound_v2.overlay"
+    BLEHOUND_ARGS="-DBOARD_ROOT=$PROJ_DIR/firmware -DEXTRA_CONF_FILE=boards/blehound.conf -DEXTRA_DTC_OVERLAY_FILE=boards/blehound.overlay;boards/blehound_v2.overlay"
 else
     BUILD_DIR="${BUILD_DIR:-$PROJ_DIR/build_dongle}"
-    BLEHOUND_ARGS="-DEXTRA_CONF_FILE=boards/blehound.conf -DEXTRA_DTC_OVERLAY_FILE=boards/blehound.overlay"
+    BLEHOUND_ARGS="-DBOARD_ROOT=$PROJ_DIR/firmware -DEXTRA_CONF_FILE=boards/blehound.conf -DEXTRA_DTC_OVERLAY_FILE=boards/blehound.overlay"
 fi
 shift || true
 # Allow the "tools/build.sh -- --pristine" form that passes only west args (when the first arg is --, do not treat it as the board name).
-[ "${BOARD}" = "--" ] && BOARD="nrf54lm20dk/nrf54lm20a/cpuapp"
+[ "${BOARD}" = "--" ] && BOARD="blehound/nrf54lm20a/cpuapp"
 
 echo "== NCS_TOPDIR : $NCS_TOPDIR"
 echo "== SDK        : $ZEPHYR_SDK_INSTALL_DIR"

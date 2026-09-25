@@ -1,0 +1,39 @@
+# BLEhound board definition, derived from the Zephyr nRF54LM20 DK board
+# (boards/nordic/nrf54lm20dk, Copyright (c) 2025 Nordic Semiconductor ASA).
+# SPDX-License-Identifier: Apache-2.0
+#
+# Board target: blehound/nrf54lm20a/cpuapp (only the application core is supported).
+board:
+  name: blehound
+  full_name: BLEhound (3x nRF54LM20A + nRF21540)
+  vendor: blehound
+  socs:
+  - name: nrf54lm20a
+runners:
+  run_once:
+    '--recover':
+    - runners:
+      - nrfjprog
+      - nrfutil
+      run: first
+      groups:
+      - boards:
+        - blehound/nrf54lm20a/cpuapp
+    '--erase':
+    - runners:
+      - nrfjprog
+      - jlink
+      - nrfutil
+      run: first
+      groups:
+      - boards:
+        - blehound/nrf54lm20a/cpuapp
+    '--reset':
+    - runners:
+      - nrfjprog
+      - jlink
+      - nrfutil
+      run: last
+      groups:
+      - boards:
+        - blehound/nrf54lm20a/cpuapp

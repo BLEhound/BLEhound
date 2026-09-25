@@ -1,0 +1,24 @@
+/*
+ * BLEhound board definition (3x nRF54LM20A + nRF21540), derived from the Zephyr
+ * nRF54LM20 DK board (boards/nordic/nrf54lm20dk, Copyright (c) 2025 Nordic Semiconductor ASA).
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+
+#include <nordic/nrf54lm20a_cpuapp.dtsi>
+#include "blehound_nrf54lm20a_cpuapp_common.dtsi"
+
+/ {
+	compatible = "blehound,blehound-nrf54lm20a-cpuapp";
+	model = "BLEhound nRF54LM20A Application MCU";
+
+	chosen {
+		zephyr,code-partition = &slot0_partition;
+		zephyr,sram = &cpuapp_sram;
+	};
+};
+
+/* Include default memory partition configuration file */
+#include <vendor/nordic/nrf54lm20a_cpuapp_partition.dtsi>
