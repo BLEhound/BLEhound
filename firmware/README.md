@@ -35,8 +35,8 @@ You also need a Zephyr SDK compatible with NCS v3.4.0 (1.0.1). Point to it with
 
 ```bash
 # nRF54LM20A BLEhound (default board target)
-west build -b nrf54lm20dk/nrf54lm20a/cpuapp -s BLEhound/firmware \
-  -- -DEXTRA_CONF_FILE=boards/blehound.conf \
+west build -b blehound/nrf54lm20a/cpuapp -s BLEhound/firmware \
+  -- -DBOARD_ROOT=. -DEXTRA_CONF_FILE=boards/blehound.conf \
      -DEXTRA_DTC_OVERLAY_FILE=boards/blehound.overlay
 ```
 

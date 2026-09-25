@@ -45,7 +45,7 @@ elif [ -f "$PROJ_DIR/build/firmware/zephyr/zephyr.hex" ]; then
 elif [ -f "$PROJ_DIR/build/zephyr/zephyr.hex" ]; then
     HEX="$PROJ_DIR/build/zephyr/zephyr.hex"
 else
-    echo "Error: no hex found, build first: tools/build.sh nrf54lm20dk/nrf54lm20a/cpuapp" >&2
+    echo "Error: no hex found, build first: tools/build.sh" >&2
     exit 1
 fi
 [ -f "$HEX" ] || { echo "Error: firmware does not exist: $HEX"; exit 1; }

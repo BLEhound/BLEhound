@@ -1,0 +1,25 @@
+# BLEhound board definition, derived from the Zephyr nRF54LM20 DK board
+# (boards/nordic/nrf54lm20dk, Copyright (c) 2025 Nordic Semiconductor ASA).
+# SPDX-License-Identifier: Apache-2.0
+
+identifier: blehound/nrf54lm20a/cpuapp
+name: BLEhound-nRF54LM20A-Application
+type: mcu
+arch: arm
+toolchain:
+  - gnuarmemb
+  - zephyr
+sysbuild: true
+ram: 511
+flash: 920
+supported:
+  - adc
+  - counter
+  - dmic
+  - gpio
+  - i2c
+  - i2s
+  - pwm
+  - spi
+  - usbd
+  - watchdog

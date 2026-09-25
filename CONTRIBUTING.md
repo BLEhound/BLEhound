@@ -23,7 +23,7 @@ contributions span C, Python, and KiCad.
 
 1. Branch from `main`.
 2. Keep commits conventional (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`).
-3. For firmware changes, confirm it builds: `west build -b nrf54lm20dk/nrf54lm20a/cpuapp -s firmware`.
+3. For firmware changes, confirm it builds: `west build -b blehound/nrf54lm20a/cpuapp -s firmware -- -DBOARD_ROOT=.`.
 4. For host changes, keep `--selftest` green.
 5. Describe what you tested on real hardware.
 

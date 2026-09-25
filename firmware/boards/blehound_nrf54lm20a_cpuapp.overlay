@@ -1,8 +1,9 @@
 /*
- * Firmware pin definitions for the in-house full board blehound (3x nRF54LM20A) -- overlaid on the DK target.
+ * Firmware pin definitions for the in-house full board blehound (3x nRF54LM20A) -- overlaid on the blehound board target
+ * (firmware/boards/blehound/, a copy of the nRF54LM20 DK board definition).
  *
- * NOTE: this overlay targets the nRF54LM20 DK and uses DK GPIOs as **placeholders** so the firmware
- *   compiles/links on the DK. The real-board ball map (finalized) lives in boards/blehound.overlay,
+ * NOTE: this overlay uses the DK's GPIO numbers as **placeholders** so the same firmware also
+ *   compiles/links and runs on an nRF54LM20 DK. The real-board ball map (finalized) lives in boards/blehound.overlay,
  *   which is layered on top of this file and overrides these pins with the actual board balls.
  */
 
