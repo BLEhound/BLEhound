@@ -34,7 +34,7 @@ case).
   37 / 38 / 39, time-aligned over a hardware SYNC line + inter-board SPI, and merged
   by the host into **one** Wireshark interface. Validated end-to-end on real boards.
 - **FEM (nRF21540 PA/LNA).** Better sensitivity and range than bare-radio sniffers.
-- **New silicon, current features.** nRF54LM20A (also runs on nRF52840). Connection
+- **New silicon, current features.** nRF54LM20A. Connection
   following with CSA #1/#2, 1M / 2M / Coded PHY with in-connection PHY updates,
   extended advertising (`AUX_CONNECT_REQ`), and BLE 5.x/6.x link-layer coverage.
 - **Doubles as a low-cost BLE RF test bench.** See the docs — the same hardware can

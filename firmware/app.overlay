@@ -1,5 +1,5 @@
 /*
- * Generic devicetree overlay (applies to both nrf52840dk and nrf52840dongle).
+ * Generic devicetree overlay (board-independent part).
  * Attaches a CDC ACM UART instance under the USB controller (zephyr_udc0),
  * for the firmware to use as a serial device -- this is the channel the host will
  * later use to read capture data.

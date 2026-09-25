@@ -34,16 +34,12 @@ west zephyr-export
 west build -b nrf54lm20dk/nrf54lm20a/cpuapp -s BLEhound/firmware \
   -- -DEXTRA_CONF_FILE=boards/blehound.conf \
      -DEXTRA_DTC_OVERLAY_FILE=boards/blehound.overlay
-
-# nRF52840 DK / Dongle
-west build -b nrf52840dk/nrf52840 -s BLEhound/firmware
 ```
 
 或使用便捷封装脚本（自动选择 overlay 和输出目录）：
 
 ```bash
 BLEhound/tools/build.sh                          # nRF54LM20A dongle → build_dongle/
-BLEHOUND=0 BLEhound/tools/build.sh nrf52840dk/nrf52840 # nRF52840 → build/
 ```
 
 ## 烧录

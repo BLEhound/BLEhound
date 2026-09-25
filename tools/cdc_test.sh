@@ -9,12 +9,9 @@
 # USB identity and that its CDC ACM serial port opens in raw mode. That is the useful
 # smoke test for "is the data channel alive" before starting a capture in Wireshark.
 #
-# WARNING prerequisite: the data channel goes over the **nRF52840's own USB peripheral**, not the J-Link debug port.
-#    - nRF52840 DK (PCA10056): the board has two micro-USB ports; you must plug an extra cable into
-#      the one silkscreened "nRF USB". If you only plug into the debug port (the side with the power
-#      switch / SEGGER chip), the host will not see this device at all. Both ports can be plugged in at
-#      once without interfering.
-#    - nRF52840 Dongle (PCA10059): only one USB port, just plug it in.
+# WARNING prerequisite: the data channel goes over the chip's own USB peripheral, not the J-Link debug port.
+#    - BLEhound board: plug the USB-C port into the host (an external J-Link does not enumerate this device).
+#    - nRF54LM20 DK: the board has two USB ports; use the one silkscreened "nRF USB", not the debug port.
 #
 # Usage:
 #   tools/cdc_test.sh                # auto-find the port and check it

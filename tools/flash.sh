@@ -9,7 +9,7 @@
 #
 # Usage:
 #   tools/flash.sh                      # auto-select the hex, flash, and reset
-#   tools/flash.sh path/to/app.hex      # specify the hex (e.g. the nRF52840 firmware under build/...)
+#   tools/flash.sh path/to/app.hex      # specify the hex explicitly
 #   RECOVER=1 tools/flash.sh            # recover first (clear APPROTECT), then flash
 #   SN=<jlink serial> tools/flash.sh    # specify the J-Link (by default the sole one is auto-detected)
 #
