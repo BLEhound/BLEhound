@@ -13,7 +13,7 @@ Install (macOS / Linux):
     cp nrf_sniffer_extcap.py ~/.config/wireshark/extcap/
     chmod +x ~/.config/wireshark/extcap/nrf_sniffer_extcap.py
 
-Then restart Wireshark and "nRF BLE Sniffer" will appear in the interface list.
+Then restart Wireshark and "BLEhound Sniffer" will appear in the interface list.
 
 Dependency: pyserial (pip3 install pyserial).
 """
@@ -45,7 +45,7 @@ TRI_AGGREGATED_IFACE = "tri-aggregated"
 # The USB identity the firmware declares in prj.conf
 SNIFFER_VID = 0x1915
 SNIFFER_PID = 0x520F
-SNIFFER_PRODUCT = "nRF BLE Sniffer"
+SNIFFER_PRODUCT = "BLEhound Sniffer"
 
 # ---- Keep in sync with the firmware's host_iface.h ----
 HOST_FRAME_PACKET = 0x01
@@ -71,6 +71,21 @@ RF_FLAG_CRC_VALID = 0x0800
 
 ADV_CHANNELS = [37, 38, 39]
 DEFAULT_CHANNEL = 37
+
+# Primary-channel legacy advertising PDU types (low 4 bits of the header). AdvA is at payload offset 0 (pdu[2:8]).
+ADV_IND = 0x0             # connectable scannable undirected
+ADV_DIRECT_IND = 0x1     # connectable directed
+ADV_NONCONN_IND = 0x2    # non-connectable non-scannable
+SCAN_RSP = 0x4           # scan response (often carries the name)
+ADV_SCAN_IND = 0x6       # scannable non-connectable
+ADV_EXT_IND = 0x7        # extended advertising: AdvA lives in the ext header, not parsed by the scan
+# Types whose payload starts with a 6-byte AdvA, usable for device discovery
+_ADV_WITH_ADVA = frozenset({ADV_IND, ADV_DIRECT_IND, ADV_NONCONN_IND, SCAN_RSP, ADV_SCAN_IND})
+# Types that carry AdvData (may contain a local name); ADV_DIRECT_IND only has TargetA, no AdvData
+_ADV_WITH_DATA = frozenset({ADV_IND, ADV_NONCONN_IND, ADV_SCAN_IND, SCAN_RSP})
+ADV_PDU_TYPE_MASK = 0x0F
+ADV_TXADD_RANDOM = 0x40  # header bit6: TxAdd, set = random address
+SCAN_DEFAULT_SECS = 4.0  # how long one reload scan runs
 
 
 # ------------------------------------------------------------------ COBS
@@ -236,17 +251,179 @@ def find_sniffers():
     return found
 
 
+# -------------------------------------------------- scan to pick a target (used by reload)
+
+def _adv_addr_kind(adva: bytes, tx_random: bool) -> str:
+    """Classify an address from AdvA. For random ones, the top 2 bits tell RPA / static / non-resolvable apart."""
+    if not tx_random:
+        return "public"
+    top = adva[5] >> 6      # adva is little-endian, the MSB is the last byte
+    if top == 0b01:
+        return "RPA"        # resolvable private -- rotates periodically, pick then start soon
+    if top == 0b11:
+        return "static"     # static random -- relatively stable
+    return "nrpa"           # non-resolvable private
+
+
+def _parse_adv_local_name(adv_data: bytes):
+    """Pull the Complete (0x09) / Shortened (0x08) Local Name out of AdvData; None if absent."""
+    i, n = 0, len(adv_data)
+    while i + 1 < n:
+        length = adv_data[i]
+        if length == 0:
+            break
+        ad_type = adv_data[i + 1]
+        val = adv_data[i + 2:i + 1 + length]
+        if ad_type in (0x08, 0x09):
+            try:
+                return val.decode("utf-8").rstrip("\x00")
+            except UnicodeDecodeError:
+                return val.decode("latin-1", "replace").rstrip("\x00")
+        i += 1 + length
+    return None
+
+
+def _collect_adv(pdu: bytes, rssi: int, devices: dict):
+    """Merge one advertising PDU into devices (key = display address string)."""
+    if len(pdu) < 8:
+        return
+    ptype = pdu[0] & ADV_PDU_TYPE_MASK
+    if ptype not in _ADV_WITH_ADVA:
+        return    # extended advertising etc.: AdvA is not at this offset, skip
+    adva = pdu[2:8]
+    addr_str = ":".join(f"{b:02X}" for b in reversed(adva))
+    atype = _adv_addr_kind(adva, bool(pdu[0] & ADV_TXADD_RANDOM))
+    connectable = ptype in (ADV_IND, ADV_DIRECT_IND)
+    name = None
+    if ptype in _ADV_WITH_DATA:
+        end = 2 + pdu[1] if len(pdu) >= 2 + pdu[1] else len(pdu)
+        name = _parse_adv_local_name(pdu[8:end])
+
+    d = devices.get(addr_str)
+    if d is None:
+        devices[addr_str] = {"name": name, "rssi": rssi,
+                             "atype": atype, "conn": connectable}
+        return
+    if rssi > d["rssi"]:
+        d["rssi"] = rssi
+    if name and not d["name"]:
+        d["name"] = name        # the name may arrive later in a SCAN_RSP
+    if connectable:
+        d["conn"] = True
+
+
+def scan_devices(interface: str, duration: float = SCAN_DEFAULT_SECS):
+    """Briefly scan nearby advertising and return a deduped device list (strongest RSSI first).
+
+    Only legacy advertising is parsed (AdvA at payload offset 0); extended advertising (ADV_EXT_IND)
+    is not parsed here. A passive sniffer never sends SCAN_REQ, so devices that only put their name in
+    a SCAN_RSP may show up without a name.
+    """
+    try:
+        ser = serial.Serial(interface, timeout=0.2)
+    except serial.SerialException as exc:
+        sys.stderr.write(f"scan could not open serial port {interface}: {exc}\n")
+        return []
+
+    devices: dict = {}
+    try:
+        ser.dtr = True                                        # the firmware only sends frames once DTR is set
+        send_cmd(ser, bytes([HOST_CMD_SET_HOPPING, 1]))       # round-robin 37/38/39
+        send_cmd(ser, bytes([HOST_CMD_SET_TARGET]) + bytes(6))  # no filter
+        send_cmd(ser, bytes([HOST_CMD_SET_SINGLE_TARGET, 0]))   # don't lock onto a connection while scanning
+        time.sleep(0.05)
+        ser.reset_input_buffer()
+
+        buf = bytearray()
+        deadline = time.time() + duration
+        while time.time() < deadline:
+            try:
+                chunk = ser.read(4096)
+            except serial.SerialException:
+                break
+            if not chunk:
+                continue
+            buf += chunk
+            while b"\x00" in buf:
+                frame, _, rest = buf.partition(b"\x00")
+                buf = bytearray(rest)
+                if not frame:
+                    continue
+                try:
+                    pkt = parse_frame(cobs_decode(bytes(frame)))
+                except Exception:
+                    continue
+                if pkt is None or not pkt["crc_ok"]:
+                    continue
+                _collect_adv(pkt["pdu"], pkt["rssi"], devices)
+    finally:
+        try:
+            ser.close()
+        except Exception:
+            pass
+
+    result = [{"addr": a, **v} for a, v in devices.items()]
+    result.sort(key=lambda d: d["rssi"], reverse=True)
+    return result
+
+
+def _extcap_sanitize(text: str) -> str:
+    """extcap display/value fields must not contain braces or newlines; strip them."""
+    return text.replace("{", "(").replace("}", ")").replace("\n", " ").replace("\r", " ")
+
+
+# How many devices to list in the dropdown (a saturated band can yield hundreds; listing all is unusable, so take the strongest by RSSI)
+PICK_MAX_DEVICES = 60
+
+
+def _print_pick_target_values(interface, arg_number=2, duration=SCAN_DEFAULT_SECS):
+    """Scan nearby and print **connectable** devices as pick-target dropdown values (used by both config prefill and reload).
+
+    Only connectable devices are listed (only they send CONNECT_IND and can ever be a follow target), sorted
+    by RSSI strongest-first, capped at PICK_MAX_DEVICES; non-connectable beacons/random addresses never enter
+    the dropdown.
+    """
+    scan_iface = interface
+    if interface == TRI_AGGREGATED_IFACE or not interface:
+        sniffers = find_sniffers()          # the aggregated interface has no single serial port; scan on the first sniffer
+        scan_iface = sniffers[0][0] if sniffers else None
+
+    # the empty option always comes first: don't lock, follow the first connection (or fall back to the manual MAC)
+    print(f"value {{arg={arg_number}}}{{value=}}{{display=(don't lock, follow the first connection)}}")
+    if not scan_iface:
+        sys.stderr.write("no sniffer found, cannot scan\n")
+        return
+
+    all_devs = scan_devices(scan_iface, duration)
+    connectable = [d for d in all_devs if d["conn"]]
+    shown = connectable[:PICK_MAX_DEVICES]
+    sys.stderr.write(
+        f"scan done: {len(all_devs)} advertisers total, {len(connectable)} connectable, "
+        f"listing the strongest {len(shown)}\n")
+
+    for d in shown:
+        name = d["name"] or "(no name)"
+        disp = _extcap_sanitize(
+            f"{name} · {d['addr']} · {d['rssi']}dBm · {d['atype']}")
+        print(f"value {{arg={arg_number}}}{{value={d['addr']}}}{{display={disp}}}")
+
+
+def extcap_reload_pick_target(interface, arg_number=2):
+    """reload callback: rescan when the refresh circle is clicked (uses a longer duration for a fuller list)."""
+    _print_pick_target_values(interface, arg_number, duration=SCAN_DEFAULT_SECS)
+
+
 # ---------------------------------------------------------- extcap interface
 
 def extcap_interfaces():
     print("extcap {version=1.0}{help=https://github.com/BLEhound/BLEhound}"
-          "{display=nRF BLE Sniffer}")
+          "{display=BLEhound Sniffer}")
     # aggregated interface: read all sniffers at once, align them on a common time base, dedup, and merge into one PCAP (design §6)
     print(f"interface {{value={TRI_AGGREGATED_IFACE}}}"
-          "{display=nRF BLE Sniffer (3ch aggregated)}")
+          "{display=BLEhound Sniffer (3ch aggregated)}")
     # per-serial-device: for single-board / single-channel debugging
     for device, _desc in find_sniffers():
-        print(f"interface {{value={device}}}{{display=nRF BLE Sniffer ({device})}}")
+        print(f"interface {{value={device}}}{{display=BLEhound Sniffer ({device})}}")
 
 
 def extcap_dlts():
@@ -254,7 +431,7 @@ def extcap_dlts():
           "{name=BLUETOOTH_LE_LL_WITH_PHDR}{display=Bluetooth LE LL}")
 
 
-def extcap_config():
+def extcap_config(interface=None):
     print("arg {number=0}{call=--scan-hopping}{display=Three-channel round-robin scan}"
           "{type=boolflag}{default=true}"
           "{tooltip=Round-robin scan across 37/38/39; turn it off to stay only on the single channel specified below}")
@@ -265,20 +442,29 @@ def extcap_config():
     for c in ADV_CHANNELS:
         print(f"value {{arg=1}}{{value={c}}}{{display={c}}}")
 
-    print("arg {number=2}{call=--target}{display=Follow target MAC only}"
-          "{type=string}{default=}"
-          "{tooltip=Like AA:BB:CC:DD:EE:FF, follow only connections to that device; leave empty to follow any connection}")
+    # Scan to pick a target: opening this window auto-scans and prefills the dropdown; the circle button rescans. A pick here wins over the manual MAC below.
+    print("arg {number=2}{call=--pick-target}{display=Scan for a target}"
+          "{type=selector}{reload=true}"
+          "{tooltip=Opening this window auto-scans nearby advertisers and fills the dropdown; click the circle to rescan. "
+          "Pick the device to follow; this wins over the manual MAC below. "
+          "RPA addresses rotate, so after picking start capture and trigger a fresh connection soon.}")
+    # scan once when the options open (shorter, to keep the dialog snappy); the circle reload rescans with a longer window
+    _print_pick_target_values(interface, arg_number=2, duration=2.5)
 
-    print("arg {number=3}{call=--include-crc-errors}{display=Include CRC-error packets}"
+    print("arg {number=3}{call=--target}{display=Follow target MAC only (manual)}"
+          "{type=string}{default=}"
+          "{tooltip=Like AA:BB:CC:DD:EE:FF, follow only connections to that device; used only when the dropdown above is empty; both empty = follow any connection}")
+
+    print("arg {number=4}{call=--include-crc-errors}{display=Include CRC-error packets}"
           "{type=boolflag}{default=false}"
           "{tooltip=When on, packets that fail the CRC check are sent to Wireshark too, useful for diagnosing weak signals}")
 
-    print("arg {number=4}{call=--follow-relay}{display=Tri-board joint follow (aggregated)}"
+    print("arg {number=5}{call=--follow-relay}{display=Tri-board joint follow (aggregated)}"
           "{type=boolflag}{default=false}"
           "{tooltip=Aggregated interface only: when one board captures a CONNECT_IND, relay the connection parameters to the other two to follow together, "
           "so when one board misses packets the other two fill in. No effect on post-encryption updates.}")
 
-    print("arg {number=5}{call=--multi-target}{display=Multi-target mode (evaluation)}"
+    print("arg {number=6}{call=--multi-target}{display=Multi-target mode (evaluation)}"
           "{type=boolflag}{default=false}"
           "{tooltip=Single-target by default: after following one connection it stops scanning and accepts no new connections until it ends; when a target MAC is set "
           "advertising too forwards only packets related to that MAC. Check it to restore multi-target evaluation behavior (scan while idle, follow up to 6 at once).}")
@@ -648,18 +834,20 @@ def cobs_encode(data: bytes) -> bytes:
 # ----------------------------------------------------------------- main
 
 def main():
-    parser = argparse.ArgumentParser(description="nRF BLE Sniffer extcap plugin",
+    parser = argparse.ArgumentParser(description="BLEhound Sniffer extcap plugin",
                                      add_help=False)
     parser.add_argument("--extcap-interfaces", action="store_true")
     parser.add_argument("--extcap-dlts", action="store_true")
     parser.add_argument("--extcap-config", action="store_true")
     parser.add_argument("--extcap-version", nargs="?")
     parser.add_argument("--extcap-interface")
+    parser.add_argument("--extcap-reload-option", default=None)
     parser.add_argument("--capture", action="store_true")
     parser.add_argument("--fifo")
     parser.add_argument("--channel", type=int, default=DEFAULT_CHANNEL)
     parser.add_argument("--scan-hopping", action="store_true")
     parser.add_argument("--target", default="")
+    parser.add_argument("--pick-target", default="")
     parser.add_argument("--include-crc-errors", action="store_true")
     parser.add_argument("--follow-relay", action="store_true")
     parser.add_argument("--multi-target", action="store_true")
@@ -676,21 +864,27 @@ def main():
         return 0
 
     if args.extcap_config:
-        extcap_config()
+        # the dropdown's refresh circle was clicked → scan and return only that dropdown's values; otherwise print the full config
+        if args.extcap_reload_option:
+            extcap_reload_pick_target(args.extcap_interface)
+        else:
+            extcap_config(args.extcap_interface)
         return 0
 
     if args.capture:
         if not args.extcap_interface or not args.fifo:
             sys.stderr.write("--capture requires both --extcap-interface and --fifo\n")
             return 1
+        # the dropdown pick wins over the manual MAC; both empty = no filter
+        target = args.pick_target or args.target
         try:
             if args.extcap_interface == TRI_AGGREGATED_IFACE:
-                capture_aggregated(args.fifo, args.include_crc_errors, args.target,
+                capture_aggregated(args.fifo, args.include_crc_errors, target,
                                    follow_relay=args.follow_relay,
                                    multi_target=args.multi_target)
             else:
                 capture(args.extcap_interface, args.fifo, args.channel,
-                        args.include_crc_errors, args.scan_hopping, args.target,
+                        args.include_crc_errors, args.scan_hopping, target,
                         multi_target=args.multi_target)
         except KeyboardInterrupt:
             pass
