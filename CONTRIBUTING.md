@@ -8,7 +8,7 @@ contributions span C, Python, and KiCad.
 - **Test coverage across stacks.** The connection-following and multi-channel paths
   are exercised against specific central/peripheral stacks. Reports (or fixes) from
   other phones, SoCs, and BLE stacks are especially valuable.
-- **Bug reports.** Include: firmware commit, board (nRF54LM20A / nRF52840), how you
+- **Bug reports.** Include: firmware commit, board (BLEhound / nRF54LM20A DK), how you
   reproduced it, and a capture (`.pcapng`) if relevant. Scrub any private addresses.
 - **Firmware / host code.** Keep changes focused; match the existing style.
 - **Docs.** The documentation site lives in the separate `BLEhound.github.io` repo.

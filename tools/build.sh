@@ -16,7 +16,6 @@
 #   V2=1 tools/build.sh                     # revised board (V2): also overlay boards/blehound_v2.overlay
 #                                           #   (inter-chip SPIM00 moved to the datasheet's dedicated pins P2.01/P2.02/P2.04), output build_dongle_v2/
 #                                           #   WARNING the first-batch flywire board cannot flash the V2 output (P2.01 is its old SYNC net)
-#   BLEHOUND=0 tools/build.sh nrf52840dk/nrf52840  # legacy path: nRF52840 DK/Dongle (output build/)
 #   NCS_TOPDIR=/path/to/ncs tools/build.sh  # specify the NCS workspace
 #
 set -euo pipefail
@@ -37,25 +36,18 @@ fi
 export ZEPHYR_SDK_INSTALL_DIR="${ZEPHYR_SDK_INSTALL_DIR:-$HOME/zephyr-sdk-1.0.1}"
 export ZEPHYR_TOOLCHAIN_VARIANT="${ZEPHYR_TOOLCHAIN_VARIANT:-zephyr}"
 
-# BLEHOUND=1 (default): real-board overlay layer. The board is fixed to the nrf54lm20dk target and the output goes to its own build_dongle/,
-# to avoid cross-contaminating the cmake cache with a pure DK build (build/).
-BLEHOUND="${BLEHOUND:-1}"
-if [ "$BLEHOUND" = "1" ] && [ "${V2:-0}" = "1" ]; then
-    BOARD="${1:-nrf54lm20dk/nrf54lm20a/cpuapp}"
+# Real-board overlay layer on top of the nrf54lm20dk target (the only supported target); output goes to build_dongle/.
+BOARD="${1:-nrf54lm20dk/nrf54lm20a/cpuapp}"
+if [ "${V2:-0}" = "1" ]; then
     BUILD_DIR="${BUILD_DIR:-$PROJ_DIR/build_dongle_v2}"
     BLEHOUND_ARGS="-DEXTRA_CONF_FILE=boards/blehound.conf -DEXTRA_DTC_OVERLAY_FILE=boards/blehound.overlay;boards/blehound_v2.overlay"
-elif [ "$BLEHOUND" = "1" ]; then
-    BOARD="${1:-nrf54lm20dk/nrf54lm20a/cpuapp}"
+else
     BUILD_DIR="${BUILD_DIR:-$PROJ_DIR/build_dongle}"
     BLEHOUND_ARGS="-DEXTRA_CONF_FILE=boards/blehound.conf -DEXTRA_DTC_OVERLAY_FILE=boards/blehound.overlay"
-else
-    BOARD="${1:-nrf52840dk/nrf52840}"
-    BUILD_DIR="${BUILD_DIR:-$PROJ_DIR/build}"
-    BLEHOUND_ARGS=""
 fi
 shift || true
 # Allow the "tools/build.sh -- --pristine" form that passes only west args (when the first arg is --, do not treat it as the board name).
-[ "${BOARD}" = "--" ] && { BOARD="$( [ "$BLEHOUND" = "1" ] && echo nrf54lm20dk/nrf54lm20a/cpuapp || echo nrf52840dk/nrf52840 )"; }
+[ "${BOARD}" = "--" ] && BOARD="nrf54lm20dk/nrf54lm20a/cpuapp"
 
 echo "== NCS_TOPDIR : $NCS_TOPDIR"
 echo "== SDK        : $ZEPHYR_SDK_INSTALL_DIR"

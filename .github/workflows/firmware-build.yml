@@ -28,6 +28,3 @@ jobs:
           west build -b nrf54lm20dk/nrf54lm20a/cpuapp -s BLEhound/firmware -d build_dongle \
             -- -DEXTRA_CONF_FILE=boards/blehound.conf \
                -DEXTRA_DTC_OVERLAY_FILE=boards/blehound.overlay
-
-      - name: Build (nRF52840)
-        run: west build -b nrf52840dk/nrf52840 -s BLEhound/firmware -d build_52840
