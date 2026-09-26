@@ -57,6 +57,12 @@
                                        *   14    1   fw_len, length N of the firmware version string
                                        *   15    N   firmware version string (ASCII, no terminating 0) */
 
+#define HOST_FRAME_SYNC       0x03   /**< SYNC heartbeat, firmware → PC: sent proactively after every SYNC edge, regardless of
+                                       *   whether packets were captured (in single-target mode non-target packets are all
+                                       *   filtered, so capture frames may stop for seconds; a host that only took sync_epoch
+                                       *   from capture frames got a stale tick, paired edges 1 s off, and every tri-board relay
+                                       *   anchor was wrong). Layout (little-endian): 0 type=3; 1 board_id; 2..5 sync_count; 6..9 sync_epoch */
+
 #define HOST_CMD_SET_CHANNEL  0x81   /**< arg: 1 byte, BLE channel index 0..39 */
 #define HOST_CMD_START        0x82   /**< no args, start capturing */
 #define HOST_CMD_STOP         0x83   /**< no args, stop capturing */
@@ -73,6 +79,11 @@
                                           *   that target's connection and stop scanning / accepting new ones once following;
                                           *   0 = multi-target evaluation mode, follow everything (up to 6) */
 #define HOST_CMD_QUERY_STATUS 0x88   /**< no args, the firmware replies with one HOST_FRAME_STATUS frame */
+#define HOST_CMD_LL_CTRL_HINT 0x8A   /**< Key hint: an encrypted LL control PDU of some connection that the host decrypted with the
+                                       *   LTK and relays to the firmware. Args: access_addr (4, little-endian) + plaintext LL data
+                                       *   PDU (2-byte header + payload, MIC stripped). The firmware treats it as a plaintext control
+                                       *   packet received on that connection, so channel-map / connection-parameter / PHY updates
+                                       *   switch at the instant as usual and the link is no longer lost after encryption. */
 #define HOST_CMD_SET_IRK      0x89   /**< arg: 16-byte IRK in **over-the-air / SMP Identity Information order (LSO first)**,
                                        *   matching the device log line "IRK wire/LSO-first"; all zero = clear. With an IRK set,
                                        *   the firmware uses ah() to recognise the target's new RPAs and makes them the current
@@ -100,9 +111,11 @@ struct host_status {
 
 /* ---- flags bits ---- */
 #define HOST_FLAG_CRC_OK      (1U << 0)  /**< CRC check passed */
-#define HOST_FLAG_DIR_S2M     (1U << 1)  /**< direction slave→master (reserved for connection following) */
+#define HOST_FLAG_DIR_S2M     (1U << 1)  /**< direction peripheral→central (meaningful only when HOST_FLAG_DIR_KNOWN is set) */
 #define HOST_FLAG_ENCRYPTED   (1U << 2)  /**< this packet is encrypted (reserved for phases B/C) */
 #define HOST_FLAG_TRI         (1U << 3)  /**< tri-device mode: 5-byte extension after the header (board_id + sync_epoch) */
+#define HOST_FLAG_DIR_KNOWN   (1U << 4)  /**< Direction of a data-channel packet is known: the follower decides by packet order within
+                                            *   the connection event, first packet = central→peripheral, the rest = peripheral→central (see DIR_S2M) */
 
 /** header length (all fixed fields before pdu) */
 #define HOST_FRAME_HEADER_LEN 17
@@ -152,7 +165,12 @@ int host_iface_send_packet(const struct radio_packet *pkt, uint32_t access_addr,
  * @return same as host_iface_send_packet
  */
 int host_iface_send_packet_tri(const struct radio_packet *pkt, uint32_t access_addr,
-			       uint8_t phy, uint8_t board_id, uint32_t sync_epoch);
+			       uint8_t phy, uint8_t board_id, uint32_t sync_epoch,
+			       uint8_t direction);
+/** direction values: 0 unknown, 1 central→peripheral, 2 peripheral→central (HOST_DIR_*) */
+#define HOST_DIR_UNKNOWN 0
+#define HOST_DIR_C2P     1
+#define HOST_DIR_P2C     2
 
 /**
  * Send one status frame (HOST_FRAME_STATUS). It shares the TX ring buffer with capture frames,
@@ -162,6 +180,11 @@ int host_iface_send_packet_tri(const struct radio_packet *pkt, uint32_t access_a
  * @return same as host_iface_send_packet
  */
 int host_iface_send_status(const struct host_status *st);
+
+/**
+ * Send one SYNC heartbeat frame (HOST_FRAME_SYNC). Like the status frame, it may only be called from the capture dequeue thread.
+ */
+int host_iface_send_sync(uint8_t board_id, uint32_t sync_count, uint32_t sync_epoch);
 
 /** Number of frames dropped due to insufficient TX buffer space */
 uint32_t host_iface_dropped(void);

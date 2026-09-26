@@ -45,6 +45,8 @@ struct conn_follower_stats {
 	uint32_t collisions;       /**< Number of times an event was missed because the radio was busy with another connection */
 	uint32_t injects_followed; /**< Tri-device co-follow: connections successfully taken over via host relay (HOST_CMD_FOLLOW) */
 	uint32_t relock_recovered; /**< M4 relock: number of times re-acquired after loss by widening the window and re-searching */
+	uint32_t hints_applied;    /**< Key hints: encrypted control PDUs the host decrypted and relayed (registered on a slot) */
+	uint32_t unmapped_events;  /**< Connection events served in unmapped-channel guard mode (encrypted, channel map untrusted) */
 	uint8_t active_now;        /**< Number of connections currently being tracked */
 	uint8_t peak_concurrent;   /**< Maximum number of connections ever tracked simultaneously */
 	uint32_t ext_adv_chase;    /**< Extended advertising: number of times a secondary (AUX) channel was successfully chased */
@@ -160,8 +162,41 @@ struct conn_follow_inject {
 };
 void conn_follower_request_inject(const struct conn_follow_inject *p);
 
+/**
+ * Key hint (HOST_CMD_LL_CTRL_HINT): an encrypted LL control PDU the host decrypted with the LTK.
+ * May be called from the CDC interrupt context: it only posts to a mailbox; the actual registration
+ * on the slot happens in the radio interrupt (poll_hint).
+ * pdu = plaintext LL data PDU (2-byte header + payload, MIC stripped).
+ */
+#define CONN_FOLLOW_HINT_MAX 40
+struct conn_follow_hint {
+	uint32_t aa;
+	uint8_t  pdu_len;
+	uint8_t  pdu[CONN_FOLLOW_HINT_MAX];
+};
+void conn_follower_request_hint(const struct conn_follow_hint *h);
+
+/**
+ * Consume the mailboxes posted by the host (FOLLOW relay / key hint). This used to happen only in
+ * conn_follower_on_packet, but in single-target mode, while the target is not advertising, every
+ * received packet is dropped at the filter and the follower is never called, so a FOLLOW was never
+ * picked up (real hardware 2026-09-27: in tri-board joint follow only the discovering board followed).
+ * Now it is called once whenever the radio interrupt receives any packet (before the filter), and the
+ * main loop calls it again with interrupts off as a fallback, so it is consumed even when the air is quiet.
+ */
+void conn_follower_poll_host_requests(void);
+
 /** Whether currently in following state */
 bool conn_follower_is_following(void);
+
+/**
+ * Direction of the packet just handed to conn_follower_on_packet (call right after it in the radio interrupt):
+ * within the connection event being served, the first packet = central→peripheral (1), the rest =
+ * peripheral→central (2); 0 when not serving a connection (advertising, periodic advertising, ISO).
+ * If the event's first packet was missed a peripheral packet is mistaken for a central one; the host uses
+ * this for display only, following is unaffected.
+ */
+uint8_t conn_follower_last_packet_direction(void);
 
 /**
  * Number of currently active connection slots — counts only ACL connections built from a self-captured

@@ -23,6 +23,8 @@
 #include "follow_policy.h"
 #include "ble_csa.h"
 #include "ble_ctrl_pdu.h"   /* Pure parsing of the 6.x new LL control PDUs (has host-side unit tests) */
+#include "tri_coord.h"      /* SYNC edge tick in the logs, to cross-check the inter-board anchor conversion */
+#include "sync_line.h"
 
 LOG_MODULE_DECLARE(sniffer, LOG_LEVEL_INF);
 
@@ -51,6 +53,10 @@ LOG_MODULE_DECLARE(sniffer, LOG_LEVEL_INF);
  * covering anchor/PHY offsets and drift/noise losses caused by unparsed updates (encrypted parameter/PHY updates, large WinOffset).
  * RELOCK_AFTER_MISS must be < the lower bound of supervision_limit (SUPERVISION_MIN=4). */
 #define RELOCK_AFTER_MISS   2u
+/* In unmapped-channel guard mode (encrypted and channel map untrusted) empty events are the norm (no packet
+ * when the channel is not in the map), so we must not start widening the window / alternating PHY after 2
+ * misses like a normal link; wait for this many consecutive misses before relocking. */
+#define UNMAPPED_RELOCK_MISS 8u
 #define RELOCK_WIDEN_MAX    5u      /* Max steps of exponential window widening */
 #define RELOCK_BASE_SPAN_US 600u    /* Starting extra span for re-search, doubling each step; the total window is still capped at "≤ one interval" */
 /* While not anchored, every this-many missed events in a row doubles the search window (up to 5 doublings) */
@@ -181,6 +187,7 @@ enum update_kind {
 
 struct pending_update {
 	bool valid;
+	bool from_hint;           /* From a host key hint (not over-the-air plaintext): the channel map becomes trusted again once the update takes effect */
 	uint16_t instant;
 	enum update_kind kind;
 	uint8_t chan_map[5];
@@ -213,6 +220,13 @@ struct conn_slot {
 	uint8_t last_unmapped;
 	uint16_t event_counter;
 	bool encrypted;
+	/* Whether the channel map is trusted: after encryption (LL_ENC_REQ) the peer's LL_CHANNEL_MAP_IND is
+	 * ciphertext the firmware cannot see, so from then on the map may have been swapped at any time. While
+	 * untrusted, every event guards the CSA#2 **unmapped channel** instead: as long as that channel is still
+	 * in the peer's map the packet is guaranteed to be there, so a map change cannot lose the link outright
+	 * (we merely capture less). The host decrypts the channel-map update with the LTK and relays it (key
+	 * hint); once it takes effect at the instant the map is trusted again. */
+	bool map_trusted;
 	bool periodic;            /* Periodic advertising slot: receives AUX_SYNC_IND, doesn't parse LL control packets */
 	bool pawr;                /* PAwR (5.4) periodic train: one periodic event contains multiple subevents */
 	uint32_t pawr_rsp_aa;     /* PAwR: access address of the response packet (RspAA in ACAD 0x32) */
@@ -443,6 +457,19 @@ void conn_follower_set_target(const uint8_t *mac)
 	f.target_active = true;
 }
 
+uint8_t conn_follower_last_packet_direction(void)
+{
+	if (f.mode != MODE_SERVING || f.pkts_this_event == 0) {
+		return 0;
+	}
+	const struct conn_slot *s = &f.slots[f.serving_idx];
+
+	if (s->bis || s->periodic) {
+		return 0;
+	}
+	return f.pkts_this_event == 1 ? 1 : 2;
+}
+
 bool conn_follower_is_following(void)
 {
 	return count_active() > 0;
@@ -606,6 +633,8 @@ static void start_following_on(const struct radio_packet *pkt, uint8_t phy,
 			aa, force_csa2 ? "AUX_CONNECT_REQ" : "CONNECT_IND", phy,
 			(uint32_t)interval * UNIT_1_25_MS_US, hop,
 			(p[0] & ADV_HDR_CHSEL2_BIT) ? 1u : 0u, csa2 ? 2u : 1u, win_offset);
+		LOG_INF("  anchor0=%u ts=%u win_size=%u sync_epoch=%u sync_count=%u", anchor0,
+			pkt->timestamp_us, win_size, tri_coord_sync_epoch(), sync_line_capture_count());
 	}
 }
 
@@ -654,6 +683,7 @@ static int build_slot(uint32_t aa, uint32_t crc_init, bool csa2, const uint8_t c
 	s->crc_init = crc_init;
 	s->csa2 = csa2;
 	s->chan_id = ble_csa_channel_id(aa);
+	s->map_trusted = true;
 	s->interval_us = (uint32_t)interval * UNIT_1_25_MS_US;
 	/* The loss threshold is computed from the link's real supervision timeout, not a fixed number of misses — with large
 	 * peripheral latency, or later when subrating is enabled, empty events should be tolerated anyway. */
@@ -692,6 +722,50 @@ void conn_follower_request_inject(const struct conn_follow_inject *p)
 	g_inject = *p;
 	g_inject_pending = true;
 	irq_unlock(key);
+}
+
+static void handle_ctrl_pdu(struct conn_slot *s, const uint8_t *ctrl, uint8_t len, bool hinted);
+
+/* ---- Key-hint mailbox: posted from the CDC interrupt, consumed in the radio interrupt (same scheme as inject) ---- */
+static struct conn_follow_hint g_hint;   /* accessed only under irq_lock */
+static bool g_hint_pending;
+
+void conn_follower_request_hint(const struct conn_follow_hint *h)
+{
+	unsigned int key = irq_lock();
+
+	g_hint = *h;
+	g_hint_pending = true;
+	irq_unlock(key);
+}
+
+static void poll_hint(void)
+{
+	if (!g_hint_pending) {
+		return;
+	}
+	unsigned int key = irq_lock();
+	struct conn_follow_hint h = g_hint;
+
+	g_hint_pending = false;
+	irq_unlock(key);
+
+	if (h.pdu_len < 3 || (h.pdu[0] & 0x03) != 0x03 || h.pdu[1] < 1 ||
+	    (uint8_t)(h.pdu[1] + 2u) > h.pdu_len) {
+		return;
+	}
+	for (int i = 0; i < CONN_FOLLOW_MAX_SLOTS; i++) {
+		struct conn_slot *s = &f.slots[i];
+
+		if (!s->active || s->bis || s->periodic || s->aa != h.aa) {
+			continue;
+		}
+		handle_ctrl_pdu(s, &h.pdu[2], h.pdu[1], true);
+		f.stats.hints_applied++;
+		LOG_INF("hint: AA=%08X opcode 0x%02X (instant %u, now %u)", s->aa, h.pdu[2],
+			s->pending.valid ? s->pending.instant : 0u, s->event_counter);
+		return;
+	}
 }
 
 static void poll_inject(void)
@@ -733,6 +807,9 @@ static void poll_inject(void)
 		       p.latency, p.timeout, p.win_size, anchor_k, (uint16_t)k,
 		       INJECT_EXTRA_WIN_US, PHY_1M) >= 0) {
 		f.stats.injects_followed++;
+		LOG_INF("inject AA=%08X anchor0=%u now=%u k=%u anchor_k=%u interval=%uus win=%u sync_epoch=%u sync_count=%u",
+			p.aa, p.anchor0_us, now, k, anchor_k, interval_us, p.win_size,
+			tri_coord_sync_epoch(), sync_line_capture_count());
 	}
 }
 
@@ -896,6 +973,8 @@ static void start_cis(struct conn_slot *acl, uint32_t cis_aa, uint32_t cis_offse
 	refresh_active_stats();
 }
 
+static void handle_ctrl_pdu(struct conn_slot *s, const uint8_t *ctrl, uint8_t len, bool hinted);
+
 static void handle_data_pdu(struct conn_slot *s, const struct radio_packet *pkt)
 {
 	const uint8_t llid = pkt->pdu[0] & 0x03;
@@ -910,16 +989,25 @@ static void handle_data_pdu(struct conn_slot *s, const struct radio_packet *pkt)
 
 	if (opcode == LL_ENC_REQ) {
 		s->encrypted = true;   /* Payload is ciphertext afterwards, no longer parsed */
+		s->map_trusted = false; /* Channel-map updates are invisible from here on: guard the unmapped channel and wait for a host hint */
 		return;
 	}
 	if (s->encrypted) {
 		return;
 	}
+	handle_ctrl_pdu(s, ctrl, len, false);
+}
+
+/* Plaintext LL control PDU: from the air (hinted=false) or from a host key hint (hinted=true, relayed after decryption). */
+static void handle_ctrl_pdu(struct conn_slot *s, const uint8_t *ctrl, uint8_t len, bool hinted)
+{
+	const uint8_t opcode = ctrl[0];
 
 	switch (opcode) {
 	case LL_CHANNEL_MAP_IND:
 		if (len >= 8) {
 			s->pending.valid = true;
+			s->pending.from_hint = hinted;
 			s->pending.kind = UPD_CHAN_MAP;
 			s->pending.instant = (uint16_t)ctrl[6] | ((uint16_t)ctrl[7] << 8);
 			for (int i = 0; i < 5; i++) {
@@ -934,6 +1022,7 @@ static void handle_data_pdu(struct conn_slot *s, const struct radio_packet *pkt)
 
 			if (ble_parse_conn_update_ind(ctrl, len, &cu)) {
 				s->pending.valid = true;
+				s->pending.from_hint = hinted;
 				s->pending.kind = UPD_CONN;
 				s->pending.conn_update = cu;
 				s->pending.instant = cu.instant;
@@ -946,6 +1035,7 @@ static void handle_data_pdu(struct conn_slot *s, const struct radio_packet *pkt)
 		 * and at the instant let the radio alternate packet by packet within the event. A mask of 0 means that direction is unchanged. */
 		if (len >= 5) {
 			s->pending.valid = true;
+			s->pending.from_hint = hinted;
 			s->pending.kind = UPD_PHY;
 			s->pending.phy = phy_from_mask(ctrl[1], s->phy);
 			s->pending.phy_slave = phy_from_mask(ctrl[2], s->phy_slave);
@@ -1135,6 +1225,13 @@ static void apply_pending_if_due(struct conn_slot *s)
 	case UPD_CONN: {
 		const struct ble_conn_update_ind *u = &s->pending.conn_update;
 
+		const uint32_t old_interval_us = s->interval_us;
+		/* A key hint may arrive only after the instant (host decryption/relay latency): next_mts is then the
+		 * value extrapolated from the instant by `late` more events at the old interval, whereas the real
+		 * anchor has run at the new interval since the instant, so the interval difference for those `late`
+		 * events must be added back. On the over-the-air plaintext path `late` is always 0. */
+		const uint16_t late = (uint16_t)(s->event_counter - s->pending.instant);
+
 		s->interval_us = (uint32_t)u->interval * UNIT_1_25_MS_US;
 		s->latency = u->latency;
 		s->timeout_10ms = u->timeout_10ms;
@@ -1142,7 +1239,12 @@ static void apply_pending_if_due(struct conn_slot *s)
 		 * "old anchor + WinOffset" (Core Vol6 PartB §5.1.1). next_mts is right now the old anchor extrapolated to the instant by the old
 		 * interval (serve_close computes next_mts before calling this function), so shift it here; the first window is still widened by WinSize
 		 * to cover any position within the window. On air: WinOffset=32 (40ms) always loses tracking if not shifted. */
-		s->next_mts = ble_conn_update_new_anchor_us(s->next_mts, u);
+		s->next_mts = ble_conn_update_new_anchor_us(s->next_mts, u) +
+			      (uint32_t)late * (s->interval_us - old_interval_us);
+		if (late != 0u) {
+			LOG_INF("conn update applied %u events late (interval %u -> %u us)", late,
+				old_interval_us, s->interval_us);
+		}
 		s->first_win_us = (uint32_t)u->win_size * UNIT_1_25_MS_US +
 				  2 * OPEN_GUARD_BASE_US + STEADY_EVENT_US;
 		f.stats.conn_updates++;
@@ -1186,6 +1288,9 @@ static void apply_pending_if_due(struct conn_slot *s)
 		}
 		s->chan_count = ble_csa_channel_count(s->chan_map);
 		f.stats.map_updates++;
+		if (s->pending.from_hint) {
+			s->map_trusted = true;   /* The new map the host decrypted is the one the peer uses from the instant on */
+		}
 		break;
 	}
 	s->pending.valid = false;
@@ -1291,8 +1396,27 @@ static uint8_t bis_channel_for_subevent(struct conn_slot *s)
 	return iso_ch;
 }
 
+/* Channel map with all 37 data channels enabled: what CSA#2 computes on it is the "unmapped channel" (no remapping needed). */
+static const uint8_t k_full_chan_map[5] = {0xFF, 0xFF, 0xFF, 0xFF, 0x1F};
+
+/* Whether we are in unmapped-channel guard mode: encrypted with an untrusted channel map (and no key hint has fixed it yet). */
+static inline bool unmapped_mode(const struct conn_slot *s)
+{
+	return s->csa2 && s->encrypted && !s->map_trusted && !s->bis && !s->periodic;
+}
+
+/* Relock threshold: while guarding the unmapped channel empty events are the norm, so the threshold is much higher. */
+static inline uint16_t relock_after(const struct conn_slot *s)
+{
+	return unmapped_mode(s) ? UNMAPPED_RELOCK_MISS : RELOCK_AFTER_MISS;
+}
+
 static uint8_t channel_for_event(struct conn_slot *s)
 {
+	if (unmapped_mode(s)) {
+		f.stats.unmapped_events++;
+		return ble_csa2_next(s->event_counter, s->chan_id, k_full_chan_map, 37u);
+	}
 	if (s->csa2) {
 		return ble_csa2_next(s->event_counter, s->chan_id,
 				     s->chan_map, s->chan_count);
@@ -2143,12 +2267,12 @@ static void serve_open(int idx)
 
 	/* M4 relock: a normal connection missing several events = the anchor/PHY may be off due to an unparsed update. */
 	const bool relocking = !s->bis && !s->pawr && !s->periodic &&
-			       s->miss_count >= RELOCK_AFTER_MISS;
+			       s->miss_count >= relock_after(s);
 	/* An encrypted link can't see PHY_UPDATE_IND; when re-searching, alternate the master PHY between 1M/2M to hit the PHY the device switched to. */
 	phy_t relock_phy = (phy_t)s->phy;
 
 	if (relocking && s->encrypted) {
-		relock_phy = (((s->miss_count - RELOCK_AFTER_MISS) & 1u) != 0u) ? PHY_2M : PHY_1M;
+		relock_phy = (((s->miss_count - relock_after(s)) & 1u) != 0u) ? PHY_2M : PHY_1M;
 	}
 
 	radio_rx_stop();
@@ -2242,8 +2366,8 @@ static void serve_open(int idx)
 	/* M4 relock: a normal connection widens the window when re-searching (exponential growth); the "≤ one interval" cap below bounds the upper limit,
 	 * covering the small anchor offset from an unparsed update, clock drift, and noise losses. */
 	if (relocking) {
-		const uint32_t w = (s->miss_count - RELOCK_AFTER_MISS < RELOCK_WIDEN_MAX)
-					   ? (uint32_t)(s->miss_count - RELOCK_AFTER_MISS)
+		const uint32_t w = (s->miss_count - relock_after(s) < RELOCK_WIDEN_MAX)
+					   ? (uint32_t)(s->miss_count - relock_after(s))
 					   : RELOCK_WIDEN_MAX;
 		const uint32_t relock_win = 2u * guard + (RELOCK_BASE_SPAN_US << w);
 
@@ -2320,7 +2444,7 @@ static void serve_close(void)
 		const bool event_alive = s->bis ? (s->bis_ev_hits > 0) : alive;
 
 		if (event_alive) {
-			if (!s->bis && s->miss_count >= RELOCK_AFTER_MISS) {
+			if (!s->bis && s->miss_count >= relock_after(s)) {
 				f.stats.relock_recovered++;   /* Re-acquired after widening the window */
 			}
 			s->miss_count = 0;
@@ -2497,9 +2621,15 @@ static void sched_dispatch(void)
 
 /* ------------------------------------------------------------ RX entry point */
 
+void conn_follower_poll_host_requests(void)
+{
+	poll_inject();   /* Tri-device co-follow: consume any FOLLOW relayed from the host (safe to build the slot in the radio interrupt / with interrupts off) */
+	poll_hint();     /* Key hint: an encrypted control PDU the host decrypted, registered on the matching slot */
+}
+
 void conn_follower_on_packet(const struct radio_packet *pkt)
 {
-	poll_inject();   /* Tri-device co-follow: first consume any FOLLOW relayed from the host (safely build the slot in the radio interrupt) */
+	conn_follower_poll_host_requests();
 	poll_past();     /* PAST: consume an LL_PERIODIC_SYNC_IND received within a connection, build periodic tracking */
 
 	if (f.mode == MODE_SERVING) {
