@@ -57,6 +57,7 @@ struct captured_packet {
 	uint8_t channel;
 	uint8_t phy;
 	bool crc_ok;
+	uint8_t direction;   /* HOST_DIR_*: decided by packet order within the connection event, unknown for advertising */
 	uint8_t pdu[RADIO_PDU_MAX_LEN];
 };
 
@@ -254,6 +255,11 @@ static void on_radio_packet(const struct radio_packet *pkt)
 	/* Which link this packet belongs to depends on the AA the radio was tuned to when receiving it */
 	const uint32_t frame_aa = radio_get_access_addr();
 
+	/* The host's FOLLOW relay / key hint must be consumed **before** the target filter: while the target is
+	 * connected and not advertising, every following packet is filtered out and the follower would never
+	 * see what is in the mailboxes. */
+	conn_follower_poll_host_requests();
+
 	/* Single-target mode: once a target MAC is set, under the advertising AA only PDUs related to the target pass on — don't emit a hit,
 	 * don't build a slot, don't chase AUX, don't send to the host. Data-channel packets can only come from the followed connection, so let them all through. */
 	if ((target_active || irk_active) && frame_aa == BLE_ADV_ACCESS_ADDR &&
@@ -277,6 +283,8 @@ static void on_radio_packet(const struct radio_packet *pkt)
 		.channel = pkt->channel,
 		.phy = pkt->phy,
 		.crc_ok = pkt->crc_ok,
+		.direction = (frame_aa == BLE_ADV_ACCESS_ADDR) ? HOST_DIR_UNKNOWN
+							     : conn_follower_last_packet_direction(),
 	};
 
 	memcpy(item.pdu, pkt->pdu, item.pdu_len);
@@ -322,6 +330,21 @@ static void on_host_command(uint8_t cmd, const uint8_t *args, uint8_t args_len)
 			}
 		}
 		break;
+
+	case HOST_CMD_LL_CTRL_HINT: {
+		/* Key hint: aa(4) + plaintext LL data PDU; post to the mailbox, registered on the slot in the radio interrupt */
+		if (args_len < 4 + 3 || args_len - 4 > CONN_FOLLOW_HINT_MAX) {
+			return;
+		}
+		struct conn_follow_hint h;
+
+		h.aa = (uint32_t)args[0] | ((uint32_t)args[1] << 8) |
+		       ((uint32_t)args[2] << 16) | ((uint32_t)args[3] << 24);
+		h.pdu_len = (uint8_t)(args_len - 4);
+		memcpy(h.pdu, args + 4, h.pdu_len);
+		conn_follower_request_hint(&h);
+		break;
+	}
 
 	case HOST_CMD_SET_IRK:
 		if (args_len >= 16) {
@@ -447,10 +470,29 @@ static void sniffer_thread(void *p1, void *p2, void *p3)
 
 	struct captured_packet item;
 	char addr[18];
+	uint32_t last_sync_epoch = 0;
 
 	while (1) {
-		/* A timeout instead of K_FOREVER: QUERY_STATUS gets answered promptly even when the air is quiet. */
-		const int got = k_msgq_get(&capture_q, &item, K_MSEC(200));
+		/* A timeout instead of K_FOREVER: QUERY_STATUS gets answered / the SYNC heartbeat sent promptly even when the air is quiet. */
+		const int got = k_msgq_get(&capture_q, &item, K_MSEC(50));
+
+		/* SYNC heartbeat: sent as soon as the edge tick changes, so the host can pair time bases even when the single-target filter leaves no capture frames */
+		{
+			const uint32_t ep = tri_coord_sync_epoch();
+
+			if (ep != last_sync_epoch) {
+				last_sync_epoch = ep;
+				uint32_t cnt = sync_line_capture_count();
+
+				if (g_role.board_id == 0) {
+					struct tri_coord_stats tc;
+
+					tri_coord_get_stats(&tc);
+					cnt = tc.sync_emits;
+				}
+				host_iface_send_sync(g_role.board_id, cnt, ep);
+			}
+		}
 
 		/* AES for the new RPAs recorded by the interrupt runs here; at least once per packet / per 200 ms, so a new address misses at most its first one or two advertisements */
 		resolve_pending_rpas();
@@ -510,7 +552,8 @@ static void sniffer_thread(void *p1, void *p2, void *p3)
 		/* For tri-device merging: carry board_id and the latest SYNC edge tick (sync_epoch),
 		 * so the host can align the three timestamp streams on a common time base. */
 		if (host_iface_send_packet_tri(&pkt, item.access_addr, item.phy,
-					       g_role.board_id, tri_coord_sync_epoch()) == 0) {
+					       g_role.board_id, tri_coord_sync_epoch(),
+					       item.direction) == 0) {
 			stats.sent++;
 		}
 
@@ -609,6 +652,14 @@ int main(void)
 		/* Tri-device time-base heartbeat (board 0 emits a SYNC edge at ~1Hz; internally rate-limited). */
 		tri_coord_periodic();
 
+		/* When the air is completely quiet the RX interrupt never fires; consume the host mailboxes here as a fallback (mutually exclusive with the radio interrupt). */
+		{
+			unsigned int key = irq_lock();
+
+			conn_follower_poll_host_requests();
+			irq_unlock(key);
+		}
+
 		if (k_uptime_get() - last_stats >= STATS_LOG_INTERVAL_MS) {
 			last_stats = k_uptime_get();
 
@@ -631,13 +682,14 @@ int main(void)
 			sync_line_log_debug();
 			LOG_INF("  multi-target: currently tracking %u (peak %u), CONNECT_IND %u,"
 				"event %u, data packets %u, collisions %u, lost %u, PHY switches %u, relay takeovers %u, relocks %u,"
-				"ext-adv chases %u (throttled %u), periodic synced %u, BIS %u, CIS %u, subrate %u, PAwR responses %u, AUX connects %u",
+				"ext-adv chases %u (throttled %u), periodic synced %u, BIS %u, CIS %u, subrate %u, PAwR responses %u, AUX connects %u, hints %u, unmapped events %u",
 				cf.active_now, cf.peak_concurrent, cf.connects_seen,
 				cf.conn_events, cf.data_packets, cf.collisions, cf.lost,
 				cf.phy_updates, cf.injects_followed, cf.relock_recovered,
 				cf.ext_adv_chase, cf.ext_adv_throttled,
 				cf.periodic_synced, cf.bis_synced, cf.cis_synced,
-				cf.subrate_updates, cf.pawr_responses, cf.aux_connects);
+				cf.subrate_updates, cf.pawr_responses, cf.aux_connects,
+				cf.hints_applied, cf.unmapped_events);
 			LOG_INF("  scheduling: max window-open lateness %uus, radio config avg %uus/max %uus (%u times)",
 				cf.open_late_max_us,
 				cf.open_count ? cf.open_cost_sum_us / cf.open_count : 0,

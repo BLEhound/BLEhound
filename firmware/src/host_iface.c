@@ -225,7 +225,8 @@ bool host_iface_connected(void)
  * the same framing logic so the pdu offset / COBS / drop policy are not written twice and drift apart.
  */
 static int send_frame(const struct radio_packet *pkt, uint32_t access_addr,
-		      uint8_t phy, bool tri, uint8_t board_id, uint32_t sync_epoch)
+		      uint8_t phy, bool tri, uint8_t board_id, uint32_t sync_epoch,
+		      uint8_t direction)
 {
 	uint8_t raw[FRAME_RAW_MAX];
 	uint8_t encoded[FRAME_ENCODED_MAX];
@@ -237,7 +238,9 @@ static int send_frame(const struct radio_packet *pkt, uint32_t access_addr,
 	const uint8_t pdu_len = (uint8_t)MIN(pkt->pdu_len, RADIO_PDU_MAX_LEN);
 
 	raw[0] = HOST_FRAME_PACKET;
-	raw[1] = (pkt->crc_ok ? HOST_FLAG_CRC_OK : 0) | (tri ? HOST_FLAG_TRI : 0);
+	raw[1] = (pkt->crc_ok ? HOST_FLAG_CRC_OK : 0) | (tri ? HOST_FLAG_TRI : 0) |
+		 (direction != HOST_DIR_UNKNOWN ? HOST_FLAG_DIR_KNOWN : 0) |
+		 (direction == HOST_DIR_P2C ? HOST_FLAG_DIR_S2M : 0);
 	sys_put_le32(pkt->timestamp_us, &raw[2]);
 	raw[6] = pkt->channel;
 	raw[7] = (uint8_t)pkt->rssi_dbm;
@@ -278,13 +281,39 @@ static int send_frame(const struct radio_packet *pkt, uint32_t access_addr,
 int host_iface_send_packet(const struct radio_packet *pkt, uint32_t access_addr,
 			   uint8_t phy)
 {
-	return send_frame(pkt, access_addr, phy, false, 0, 0);
+	return send_frame(pkt, access_addr, phy, false, 0, 0, HOST_DIR_UNKNOWN);
 }
 
 int host_iface_send_packet_tri(const struct radio_packet *pkt, uint32_t access_addr,
-			       uint8_t phy, uint8_t board_id, uint32_t sync_epoch)
+			       uint8_t phy, uint8_t board_id, uint32_t sync_epoch,
+			       uint8_t direction)
 {
-	return send_frame(pkt, access_addr, phy, true, board_id, sync_epoch);
+	return send_frame(pkt, access_addr, phy, true, board_id, sync_epoch, direction);
+}
+
+int host_iface_send_sync(uint8_t board_id, uint32_t sync_count, uint32_t sync_epoch)
+{
+	uint8_t raw[10];
+	uint8_t encoded[16];
+
+	if (!host_iface_connected()) {
+		return -ENOTCONN;
+	}
+	raw[0] = HOST_FRAME_SYNC;
+	raw[1] = board_id;
+	sys_put_le32(sync_count, &raw[2]);
+	sys_put_le32(sync_epoch, &raw[6]);
+
+	size_t enc_len = cobs_encode(raw, sizeof(raw), encoded);
+
+	encoded[enc_len++] = 0x00;
+	if (ring_buf_space_get(&tx_ringbuf) < enc_len) {
+		dropped_frames++;
+		return -ENOMEM;
+	}
+	ring_buf_put(&tx_ringbuf, encoded, enc_len);
+	uart_irq_tx_enable(cdc_dev);
+	return 0;
 }
 
 int host_iface_send_status(const struct host_status *st)
