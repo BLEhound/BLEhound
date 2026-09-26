@@ -37,20 +37,18 @@
 #define ADV_FILTER_EXT_FLAG_ADVA       0x01
 
 /**
- * Whether an LL PDU (including the 2-byte header) received on the advertising AA is related to the target AdvA.
+ * Extract the AdvA ("who this packet is about") from an LL PDU (including the 2-byte header) received on the advertising AA.
  * @param pdu     Complete LL PDU: header(1) + length(1) + payload
  * @param pdu_len Total PDU length
- * @param target  6-byte BLE address, little-endian (matching the over-the-air order)
+ * @return pointer to the 6-byte AdvA inside the PDU (over-the-air little-endian); NULL if the type is unknown, carries no AdvA, or is too short
  */
-static inline bool adv_pdu_matches_target(const uint8_t *pdu, uint16_t pdu_len,
-					  const uint8_t target[6])
+static inline const uint8_t *adv_pdu_adva(const uint8_t *pdu, uint16_t pdu_len)
 {
 	if (pdu == NULL || pdu_len < 2) {
-		return false;
+		return NULL;
 	}
 
 	const uint8_t type = pdu[0] & 0x0F;
-	const uint8_t *adva = NULL;
 
 	switch (type) {
 	case ADV_FILTER_PDU_ADV_IND:
@@ -58,16 +56,10 @@ static inline bool adv_pdu_matches_target(const uint8_t *pdu, uint16_t pdu_len,
 	case ADV_FILTER_PDU_ADV_NONCONN_IND:
 	case ADV_FILTER_PDU_SCAN_RSP:
 	case ADV_FILTER_PDU_ADV_SCAN_IND:
-		if (pdu_len >= 2 + 6) {
-			adva = &pdu[2];
-		}
-		break;
+		return (pdu_len >= 2 + 6) ? &pdu[2] : NULL;
 	case ADV_FILTER_PDU_SCAN_REQ:
 	case ADV_FILTER_PDU_CONNECT_IND:
-		if (pdu_len >= 2 + 12) {
-			adva = &pdu[2 + 6];
-		}
-		break;
+		return (pdu_len >= 2 + 12) ? &pdu[2 + 6] : NULL;
 	case ADV_FILTER_PDU_ADV_EXT_IND:
 	case ADV_FILTER_PDU_AUX_CONNECT_RSP:
 		/* pdu[2] = ExtHdrLen (low 6 bits) | AdvMode (high 2 bits); pdu[3] = extended header Flags;
@@ -77,13 +69,23 @@ static inline bool adv_pdu_matches_target(const uint8_t *pdu, uint16_t pdu_len,
 			const uint8_t flags = pdu[3];
 
 			if (ext_len >= 1 + 6 && (flags & ADV_FILTER_EXT_FLAG_ADVA) != 0) {
-				adva = &pdu[4];
+				return &pdu[4];
 			}
 		}
-		break;
+		return NULL;
 	default:
-		break;
+		return NULL;
 	}
+}
+
+/**
+ * Whether an LL PDU (including the 2-byte header) received on the advertising AA is related to the target AdvA.
+ * @param target  6-byte BLE address, little-endian (matching the over-the-air order)
+ */
+static inline bool adv_pdu_matches_target(const uint8_t *pdu, uint16_t pdu_len,
+					  const uint8_t target[6])
+{
+	const uint8_t *adva = adv_pdu_adva(pdu, pdu_len);
 
 	return adva != NULL && memcmp(adva, target, 6) == 0;
 }

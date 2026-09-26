@@ -42,6 +42,20 @@
 
 /* ---- frame types ---- */
 #define HOST_FRAME_PACKET     0x01   /**< capture frame, firmware → PC */
+#define HOST_FRAME_STATUS     0x02   /**< status frame, firmware → PC (reply to HOST_CMD_QUERY_STATUS)
+                                       *   little-endian, COBS framed, layout:
+                                       *   off  len  field
+                                       *    0    1   type = HOST_FRAME_STATUS
+                                       *    1    1   status_version (currently 1)
+                                       *    2    1   board_id 0/1/2
+                                       *    3    1   guard_channel, the guarded advertising channel 37/38/39
+                                       *    4    1   flags: bit0 single-target bit1 hopping bit2 target set
+                                       *                    bit3 following a connection bit4 SYNC active bit5 IRK set
+                                       *    5    4   sync_count (board 0 = SYNC edges emitted, boards 1/2 = captured)
+                                       *    9    4   connects_seen, CONNECT_INDs captured
+                                       *   13    1   active_now, connections currently followed
+                                       *   14    1   fw_len, length N of the firmware version string
+                                       *   15    N   firmware version string (ASCII, no terminating 0) */
 
 #define HOST_CMD_SET_CHANNEL  0x81   /**< arg: 1 byte, BLE channel index 0..39 */
 #define HOST_CMD_START        0x82   /**< no args, start capturing */
@@ -58,6 +72,31 @@
                                           *   only scan advertising and follow no connection; with a target set, follow only
                                           *   that target's connection and stop scanning / accepting new ones once following;
                                           *   0 = multi-target evaluation mode, follow everything (up to 6) */
+#define HOST_CMD_QUERY_STATUS 0x88   /**< no args, the firmware replies with one HOST_FRAME_STATUS frame */
+#define HOST_CMD_SET_IRK      0x89   /**< arg: 16-byte IRK in **over-the-air / SMP Identity Information order (LSO first)**,
+                                       *   matching the device log line "IRK wire/LSO-first"; all zero = clear. With an IRK set,
+                                       *   the firmware uses ah() to recognise the target's new RPAs and makes them the current
+                                       *   target MAC automatically, so a privacy device is not lost when it changes address.
+                                       *   HOST_CMD_SET_TARGET with all zeros clears the IRK as well. */
+
+/* ---- STATUS flags bits ---- */
+#define HOST_STATUS_SINGLE_TARGET (1U << 0)
+#define HOST_STATUS_HOPPING       (1U << 1)
+#define HOST_STATUS_TARGET_SET    (1U << 2)
+#define HOST_STATUS_FOLLOWING     (1U << 3)
+#define HOST_STATUS_SYNC_ACTIVE   (1U << 4)
+#define HOST_STATUS_IRK_SET       (1U << 5)
+
+/** Status snapshot, filled in by main and handed to host_iface_send_status for encoding and upload. */
+struct host_status {
+	uint8_t     board_id;
+	uint8_t     guard_channel;
+	uint8_t     flags;          /**< OR of HOST_STATUS_* bits */
+	uint32_t    sync_count;
+	uint32_t    connects_seen;
+	uint8_t     active_now;
+	const char *fw_version;     /**< ASCII version string, NULL counts as empty */
+};
 
 /* ---- flags bits ---- */
 #define HOST_FLAG_CRC_OK      (1U << 0)  /**< CRC check passed */
@@ -114,6 +153,15 @@ int host_iface_send_packet(const struct radio_packet *pkt, uint32_t access_addr,
  */
 int host_iface_send_packet_tri(const struct radio_packet *pkt, uint32_t access_addr,
 			       uint8_t phy, uint8_t board_id, uint32_t sync_epoch);
+
+/**
+ * Send one status frame (HOST_FRAME_STATUS). It shares the TX ring buffer with capture frames,
+ * so it must be called from the **capture dequeue thread** (the only producer), never directly
+ * from the CDC command interrupt.
+ *
+ * @return same as host_iface_send_packet
+ */
+int host_iface_send_status(const struct host_status *st);
 
 /** Number of frames dropped due to insufficient TX buffer space */
 uint32_t host_iface_dropped(void);

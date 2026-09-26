@@ -26,6 +26,7 @@
 #include "sync_line.h"
 #include "led_policy.h"
 #include "adv_filter.h"
+#include "rpa_resolve.h"
 #include "fem_ctrl.h"
 
 LOG_MODULE_REGISTER(sniffer, LOG_LEVEL_INF);
@@ -64,6 +65,20 @@ K_MSGQ_DEFINE(capture_q, sizeof(struct captured_packet), CAPTURE_QUEUE_DEPTH, 4)
 /* On queue-full, drop the packet and count it — radio timing comes first; never block the interrupt just because the downstream is slow */
 static atomic_t queue_drops;
 
+/* Firmware version string V1.0.0.<git commit count>: provided by the CMake-generated blehound_version.h,
+ * incremented with every commit; outside git it falls back to V1.0.0.0. */
+#include "blehound_version.h"
+#ifndef BLEHOUND_FW_VERSION
+#define BLEHOUND_FW_VERSION "V1.0.0.0"
+#endif
+static const char fw_version[] = BLEHOUND_FW_VERSION;
+
+/* Host QUERY_STATUS request flag (set in the CDC interrupt, consumed by the capture thread) */
+static atomic_t status_requested;
+/* Mirror of the capture configuration: commands update it in the CDC interrupt, the status frame reads it in the capture thread. Single-byte accesses are naturally atomic. */
+static volatile bool st_hopping;
+static volatile bool st_single_target = true;   /* matches the conn_follower default */
+
 /* Capture statistics. Modified only in the sniffer thread, no lock needed. */
 static struct {
 	uint32_t crc_ok;
@@ -84,6 +99,13 @@ static uint8_t target_mac[6];
 static bool target_active;
 static uint32_t adv_filtered;   /* Number of advertising packets blocked by the target filter (incremented in the radio interrupt, printed in the stats line) */
 
+/* The target's IRK (HOST_CMD_SET_IRK, over-the-air / SMP order): once set, the target is still recognised after it changes RPA.
+ * The RX interrupt only consults rpa_cache; AES runs in the capture thread (see the division of work in rpa_resolve.h). */
+static uint8_t target_irk[16];
+static volatile bool irk_active;
+static struct rpa_cache rpa_cache;
+static uint32_t rpa_resolved;   /* Number of new RPAs recognised via the IRK and switched to (modified in the capture thread) */
+
 /* Set/clear the target MAC (6 little-endian bytes as on air; NULL = clear): applies to both the follower filter and the RX-interrupt advertising filter */
 static void apply_target(const uint8_t *mac)
 {
@@ -92,6 +114,55 @@ static void apply_target(const uint8_t *mac)
 	if (mac != NULL) {
 		memcpy(target_mac, mac, 6);
 		target_active = true;
+	}
+}
+
+/* Set/clear the target IRK (16 bytes, over-the-air order; NULL = clear): invalidate first, then copy, then set; the old cache is cleared too */
+static void apply_irk(const uint8_t *irk)
+{
+	irk_active = false;
+	rpa_cache_reset(&rpa_cache);
+	if (irk != NULL) {
+		memcpy(target_irk, irk, sizeof(target_irk));
+		irk_active = true;
+	}
+}
+
+/* RX interrupt: is this PDU under the advertising AA related to the target? With an IRK set, the target's new RPAs count too
+ * (only on a cache hit; an RPA seen for the first time is only recorded and treated as unrelated until the capture thread resolves it). */
+static bool adv_pdu_is_target(const uint8_t *pdu, uint16_t pdu_len)
+{
+	const uint8_t *adva = adv_pdu_adva(pdu, pdu_len);
+
+	if (adva == NULL) {
+		return false;
+	}
+	if (target_active && memcmp(adva, target_mac, 6) == 0) {
+		return true;
+	}
+	if (irk_active && rpa_is_resolvable(adva)) {
+		return rpa_cache_lookup(&rpa_cache, adva) == RPA_MATCH;
+	}
+	return false;
+}
+
+/* Capture thread: run the IRK over the RPAs the interrupt recorded as pending; whatever resolves is the target's new address, switch to it. */
+static void resolve_pending_rpas(void)
+{
+	uint8_t addr[6];
+	bool matched;
+
+	if (!irk_active) {
+		return;
+	}
+	while (rpa_cache_resolve_one(&rpa_cache, target_irk, addr, &matched)) {
+		if (!matched || (target_active && memcmp(addr, target_mac, 6) == 0)) {
+			continue;
+		}
+		apply_target(addr);
+		rpa_resolved++;
+		LOG_INF("IRK resolved new RPA %02X:%02X:%02X:%02X:%02X:%02X -> target updated",
+			addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);
 	}
 }
 
@@ -185,8 +256,8 @@ static void on_radio_packet(const struct radio_packet *pkt)
 
 	/* Single-target mode: once a target MAC is set, under the advertising AA only PDUs related to the target pass on — don't emit a hit,
 	 * don't build a slot, don't chase AUX, don't send to the host. Data-channel packets can only come from the followed connection, so let them all through. */
-	if (target_active && frame_aa == BLE_ADV_ACCESS_ADDR &&
-	    !adv_pdu_matches_target(pkt->pdu, pkt->pdu_len, target_mac)) {
+	if ((target_active || irk_active) && frame_aa == BLE_ADV_ACCESS_ADDR &&
+	    !adv_pdu_is_target(pkt->pdu, pkt->pdu_len)) {
 		adv_filtered++;
 		return;
 	}
@@ -246,19 +317,40 @@ static void on_host_command(uint8_t cmd, const uint8_t *args, uint8_t args_len)
 				all_zero = all_zero && (args[i] == 0);
 			}
 			apply_target(all_zero ? NULL : args);
+			if (all_zero) {
+				apply_irk(NULL);   /* "cancel target" clears the IRK as well */
+			}
+		}
+		break;
+
+	case HOST_CMD_SET_IRK:
+		if (args_len >= 16) {
+			bool all_zero = true;
+
+			for (int i = 0; i < 16; i++) {
+				all_zero = all_zero && (args[i] == 0);
+			}
+			apply_irk(all_zero ? NULL : args);
 		}
 		break;
 
 	case HOST_CMD_SET_SINGLE_TARGET:
 		if (args_len >= 1) {
+			st_single_target = (args[0] != 0);
 			conn_follower_set_single_target(args[0] != 0);
 		}
 		break;
 
 	case HOST_CMD_SET_HOPPING:
 		if (args_len >= 1) {
+			st_hopping = (args[0] != 0);
 			conn_follower_set_scan_hopping(args[0] != 0);
 		}
+		break;
+
+	case HOST_CMD_QUERY_STATUS:
+		/* The status frame shares the TX buffer with capture frames and can only be sent from the capture thread; only set the flag here. */
+		atomic_set(&status_requested, 1);
 		break;
 
 	case HOST_CMD_FOLLOW: {
@@ -357,7 +449,41 @@ static void sniffer_thread(void *p1, void *p2, void *p3)
 	char addr[18];
 
 	while (1) {
-		k_msgq_get(&capture_q, &item, K_FOREVER);
+		/* A timeout instead of K_FOREVER: QUERY_STATUS gets answered promptly even when the air is quiet. */
+		const int got = k_msgq_get(&capture_q, &item, K_MSEC(200));
+
+		/* AES for the new RPAs recorded by the interrupt runs here; at least once per packet / per 200 ms, so a new address misses at most its first one or two advertisements */
+		resolve_pending_rpas();
+
+		if (atomic_cas(&status_requested, 1, 0)) {
+			struct tri_coord_stats tc;
+			struct conn_follower_stats cf;
+
+			tri_coord_get_stats(&tc);
+			conn_follower_get_stats(&cf);
+
+			const uint32_t sync_count =
+				(g_role.board_id == 0) ? tc.sync_emits : sync_line_capture_count();
+			struct host_status hs = {
+				.board_id = g_role.board_id,
+				.guard_channel = g_role.guard_channel,
+				.flags = (st_single_target ? HOST_STATUS_SINGLE_TARGET : 0) |
+					 (st_hopping ? HOST_STATUS_HOPPING : 0) |
+					 (target_active ? HOST_STATUS_TARGET_SET : 0) |
+					 (irk_active ? HOST_STATUS_IRK_SET : 0) |
+					 (conn_follower_is_following() ? HOST_STATUS_FOLLOWING : 0) |
+					 (sync_count > 0 ? HOST_STATUS_SYNC_ACTIVE : 0),
+				.sync_count = sync_count,
+				.connects_seen = cf.connects_seen,
+				.active_now = conn_follower_active_connections(),
+				.fw_version = fw_version,
+			};
+			host_iface_send_status(&hs);
+		}
+
+		if (got != 0) {
+			continue;   /* timeout, no packet */
+		}
 
 		/* Radio-layer per-PHY RX count, distinguishing "a PHY received nothing" from "received but CRC bad" */
 		phy_rx[item.phy & 3]++;
@@ -490,9 +616,9 @@ int main(void)
 
 			conn_follower_get_stats(&cf);
 
-			LOG_INF("stats: CRC_OK %u, CRC_ERR %u, sent %u, queue drops %ld, target filtered %u, USB dropped %u",
+			LOG_INF("stats: CRC_OK %u, CRC_ERR %u, sent %u, queue drops %ld, target filtered %u, USB dropped %u, RPA resolved %u",
 				stats.crc_ok, stats.crc_err, stats.sent,
-				atomic_get(&queue_drops), adv_filtered, host_iface_dropped());
+				atomic_get(&queue_drops), adv_filtered, host_iface_dropped(), rpa_resolved);
 
 			struct tri_coord_stats tc;
 
