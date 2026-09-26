@@ -24,6 +24,7 @@ target_sources(app PRIVATE
     src/peer_link.c
     src/tri_coord.c
     src/fem_ctrl.c
+    src/ble_aes128.c
 )
 
 # The Radio HAL implementation is selected per chip -- this is the whole point of the HAL abstraction:
@@ -37,7 +38,24 @@ endif()
 
 target_include_directories(app PRIVATE
     src
+    ${CMAKE_CURRENT_BINARY_DIR}/blehound_generated
 )
+
+# Firmware version: V<MAJOR>.<MINOR>.<PATCH>.<BUILD>, BUILD = git commit count of this repo,
+# incremented with every commit. The generator runs on every build so a rebuild after a commit
+# picks it up; outside a git repo (e.g. an exported source archive) it falls back to 0.
+set(BLEHOUND_VERSION_BASE "V1.0.0")
+add_custom_target(blehound_version
+    BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/blehound_generated/blehound_version.h
+    COMMAND ${CMAKE_COMMAND}
+        -DBASE=${BLEHOUND_VERSION_BASE}
+        -DSRC_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+        -DOUT=${CMAKE_CURRENT_BINARY_DIR}/blehound_generated/blehound_version.h
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/gen_version.cmake
+    COMMENT "Generating firmware version (V1.0.0.<git commit count>)"
+    VERBATIM
+)
+add_dependencies(app blehound_version)
 
 # nRF54L USB uses the new UDC/usbd stack, reusing Zephyr's official USB init helper
 # (sample_usbd_init.c). common.cmake only adds that source file when CONFIG_USB_DEVICE_STACK_NEXT

@@ -287,6 +287,50 @@ int host_iface_send_packet_tri(const struct radio_packet *pkt, uint32_t access_a
 	return send_frame(pkt, access_addr, phy, true, board_id, sync_epoch);
 }
 
+int host_iface_send_status(const struct host_status *st)
+{
+	uint8_t raw[FRAME_RAW_MAX];
+	uint8_t encoded[FRAME_ENCODED_MAX];
+
+	if (!host_iface_connected()) {
+		return -ENOTCONN;
+	}
+
+	raw[0] = HOST_FRAME_STATUS;
+	raw[1] = 1;                          /* status_version */
+	raw[2] = st->board_id;
+	raw[3] = st->guard_channel;
+	raw[4] = st->flags;
+	sys_put_le32(st->sync_count, &raw[5]);
+	sys_put_le32(st->connects_seen, &raw[9]);
+	raw[13] = st->active_now;
+
+	/* Version string: use at most the space left in raw; truncate rather than overflow */
+	uint8_t fw_len = 0;
+	const size_t fw_cap = sizeof(raw) - 15;
+
+	if (st->fw_version != NULL) {
+		while (fw_len < fw_cap && st->fw_version[fw_len] != '\0') {
+			raw[15 + fw_len] = (uint8_t)st->fw_version[fw_len];
+			fw_len++;
+		}
+	}
+	raw[14] = fw_len;
+
+	const size_t raw_len = 15 + fw_len;
+	size_t enc_len = cobs_encode(raw, raw_len, encoded);
+
+	encoded[enc_len++] = 0x00;
+
+	if (ring_buf_space_get(&tx_ringbuf) < enc_len) {
+		dropped_frames++;
+		return -ENOMEM;
+	}
+	ring_buf_put(&tx_ringbuf, encoded, enc_len);
+	uart_irq_tx_enable(cdc_dev);
+	return 0;
+}
+
 uint32_t host_iface_dropped(void)
 {
 	return dropped_frames;
