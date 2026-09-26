@@ -139,4 +139,16 @@ void radio_sched_at(uint32_t at_us, radio_sched_cb_t cb);
 /** Cancel a scheduled callback that has not yet fired. */
 void radio_sched_cancel(void);
 
+/*
+ * Software-interrupt "kick": one software interrupt line at the **same priority** as the radio / TIMER
+ * interrupts. After radio_kick() from any context the handler runs immediately inside the radio's serial
+ * domain (same priority never preempts, so its changes to the follower state are naturally serialised with
+ * the RX/scheduling interrupts). Use: after an inter-board handoff / host relay lands in the inject mailbox,
+ * build the slot right away instead of waiting for the next RX interrupt, ahead of event 0 (2026-09-27:
+ * waiting for the RX poll slipped to event 1 as soon as the air went quiet).
+ */
+typedef void (*radio_kick_cb_t)(void);
+void radio_set_kick_handler(radio_kick_cb_t cb);
+void radio_kick(void);
+
 #endif /* RADIO_HAL_H_ */

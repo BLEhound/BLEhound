@@ -1,44 +1,60 @@
 /*
- * SYNC line HAL — an open-drain edge shared by the three boards, used to establish a cross-board common time base (design §5.2 / §3.3).
+ * SYNC line HAL -- the open-drain edge shared by the three boards that establishes a common cross-board
+ * time base (design 5.2 / 3.3).
  *
- * Whoever captures a CONNECT_IND (or on a periodic basis) calls sync_line_emit() to pull an edge; all three boards use a GPIO interrupt
- * to capture that edge's tick in **their own TIMER time base** (the same time base as radio_now_us), so the same physical event leaves
- * one tick in each of the three clocks → the host uses this to solve the cross-board clock offset and align the three timestamp streams (see blehound_tri_aggregator).
+ * Whoever catches a CONNECT_IND (or periodically) calls sync_line_emit() to pull an edge; all three boards
+ * capture that edge with a GPIO interrupt at a tick of **their own TIMER time base** (the same base as
+ * radio_now_us), so one physical event leaves one tick in each of the three clocks -> the host derives the
+ * cross-board clock offsets and aligns the three streams (see blehound_tri_aggregator).
  *
- * Implementation notes (relation to the design):
- *   Design §3.3 envisions **hardware capture** via "GPIOTE edge → DPPI → TIMER.CAPTURE" (zero software latency).
- *   This file uses a portable implementation with **a Zephyr GPIO interrupt + radio_now_us()**: one codebase fits both nRF52/
- *   nRF54L, and can be regression-tested on the DK by jumpering two GPIOs together. The cost is that the capture instant carries interrupt latency (µs-level jitter) —
- *   which is entirely sufficient for "a periodic sync edge aligning the three merged streams" (§3.3 says once per second is enough).
- *   ⚠️ Verify/optimize on hardware: to reach per-event anchor-level precision, the capture can be swapped for the DPPI hardware capture from radio_nrf54l.c's
- *     PUBLISH/SUBSCRIBE mechanism (TIMER10 CC[2] is already reserved).
+ * Implementation note (relation to the design):
+ *   Design 3.3 envisions **hardware capture** "GPIOTE edge -> DPPI -> TIMER.CAPTURE" (zero software latency).
+ *   This file uses a portable implementation with **Zephyr GPIO interrupt + radio_now_us()**: one code base
+ *   for nRF52/nRF54L, and it can be regression-tested on a DK with two GPIOs jumpered. The price is interrupt
+ *   latency on the captured tick (microsecond-level jitter) -- more than enough for "periodic sync edges to
+ *   align the three streams" (3.3 says once per second is enough).
+ *   Bring-up / optimisation: for per-event anchor precision the capture could be switched to the DPPI
+ *   hardware capture used in radio_nrf54l.c (PUBLISH/SUBSCRIBE, TIMER10 CC[2] reserved).
  */
 
 #ifndef SYNC_LINE_H_
 #define SYNC_LINE_H_
 
+#include <stddef.h>
 #include <stdint.h>
 
-/** Callback when a SYNC edge is captured, giving that edge's tick in this board's TIMER time base (µs). Interrupt context, extremely short. */
+/** Called when a SYNC edge is captured, with the tick of that edge in this board's TIMER time base (us).
+ *  Interrupt context, keep it very short. */
 typedef void (*sync_capture_cb_t)(uint32_t local_tick);
 
 /**
- * Initialize the SYNC line. Configures the input pin (falling-edge interrupt) and the output pin (open-drain).
- * Returns 0 but stays functionally disabled (last_capture always 0) when the tri-sync-in/out DT alias is undefined (e.g. single board).
- * @return 0 on success or when disabled; negative for errno
+ * Initialise the SYNC line: configure the input pin (falling-edge interrupt) and the output pin (open drain).
+ * Returns 0 but stays disabled (last_capture always 0) when the tri-sync-in/out aliases are not defined
+ * (e.g. single board).
+ * @return 0 on success or when disabled; negative errno otherwise
  */
 int sync_line_init(sync_capture_cb_t on_capture);
 
-/** This board pulls a SYNC edge (open-drain: drive low for a few µs, then release). The line is shared by three boards, so this board captures it too. */
-void sync_line_emit(void);
+/** Pull one SYNC edge from this board (open drain: drive low for a few us, then release). The line is shared by
+ *  all three boards, so this board captures it as well. Returns this board's tick at the moment of driving low
+ *  (us; 0 when disabled) -- the discovering board uses it as "this edge" without relying on its own capture
+ *  interrupt (which may be delayed when called from the radio interrupt). */
+uint32_t sync_line_emit(void);
 
-/** Emit a batch of diagnostic logs: pin PIN_CNF / level read-back, GPIOTE channel config and event flags (to pinpoint "pulse sent but nothing captured"). */
+/** Maximum number of recently captured edge ticks kept (ring, newest overwrites oldest). */
+#define SYNC_LINE_RECENT_MAX 4
+
+/** Copy out the most recently captured edge ticks (newest -> oldest); returns the count (<= cap). Any context. */
+size_t sync_line_recent_captures(uint32_t *out, size_t cap);
+
+/** Log a diagnostic set: pin PIN_CNF/level read-back, GPIOTE channel configuration and event flags
+ *  (to locate "pulsed but never captured"). */
 void sync_line_log_debug(void);
 
-/** Total number of edges captured by the ISR (including this board's own pulses, if hardware self-capture holds). For diagnostics. */
+/** Total edges captured by the ISR (including our own pulses when hardware self-capture works). Diagnostics. */
 uint32_t sync_line_capture_count(void);
 
-/** Read the most recently captured edge tick (this board's TIMER time base, µs; 0 = none yet). */
+/** Tick of the most recently captured edge (this board's TIMER time base, us; 0 = none yet). */
 uint32_t sync_line_last_capture(void);
 
 #endif /* SYNC_LINE_H_ */

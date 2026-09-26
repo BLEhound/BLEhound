@@ -304,6 +304,28 @@ static int hfclk_start(void)
 	return res;
 }
 
+/* ---- software-interrupt "kick" (radio_hal.h) ---- */
+#define KICK_IRQn DT_IRQN(DT_NODELABEL(egu20))
+static radio_kick_cb_t kick_cb;
+
+static void kick_isr(const void *arg)
+{
+	ARG_UNUSED(arg);
+	if (kick_cb != NULL) {
+		kick_cb();
+	}
+}
+
+void radio_set_kick_handler(radio_kick_cb_t cb)
+{
+	kick_cb = cb;
+}
+
+void radio_kick(void)
+{
+	NVIC_SetPendingIRQ(KICK_IRQn);
+}
+
 int radio_init(radio_packet_cb_t cb)
 {
 	int err;
@@ -329,6 +351,10 @@ int radio_init(radio_packet_cb_t cb)
 
 	IRQ_CONNECT(SNIFF_TIMER_IRQn, TIMER_IRQ_PRIORITY, timer_isr, NULL, 0);
 	irq_enable(SNIFF_TIMER_IRQn);
+
+	/* Software interrupt line (see radio_hal.h radio_kick): borrow an unused peripheral IRQ number, same priority as the radio. */
+	IRQ_CONNECT(KICK_IRQn, RADIO_IRQ_PRIORITY, kick_isr, NULL, 0);
+	irq_enable(KICK_IRQn);
 
 	return 0;
 }

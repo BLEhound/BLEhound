@@ -45,6 +45,16 @@ static uint32_t get_u32(const uint8_t **p)
 	return v;
 }
 
+static void put_i32(uint8_t **p, int32_t v)
+{
+	put_u32(p, (uint32_t)v);
+}
+
+static int32_t get_i32(const uint8_t **p)
+{
+	return (int32_t)get_u32(p);
+}
+
 static uint8_t xor_checksum(const uint8_t *buf, size_t n)
 {
 	uint8_t c = 0;
@@ -58,6 +68,8 @@ static uint8_t xor_checksum(const uint8_t *buf, size_t n)
 /* payload length (excluding type/len/checksum) */
 #define HIT_PAYLOAD_LEN     9    /* board_id(1) + aa(4) + anchor(4) */
 #define HANDOFF_PAYLOAD_LEN 30   /* sum of the peer_handoff fields */
+/* Offset of send_age_us inside the frame (payload byte 26 after type/len), used by the in-place set_age */
+#define HANDOFF_AGE_OFFSET  (2 + 26)
 
 /* Finalize: write the checksum and return the total frame length */
 static size_t finalize(uint8_t *buf, size_t payload_len)
@@ -104,14 +116,13 @@ size_t peer_msg_encode_handoff(const struct peer_handoff *m, uint8_t *buf, size_
 	put_u32(&p, m->ch_map_lo);
 	put_u8(&p, m->ch_map_hi);
 	put_u8(&p, m->hop);
-	put_u8(&p, m->sca);
+	put_u8(&p, m->csa2);
 	put_u16(&p, m->interval);
 	put_u16(&p, m->latency);
 	put_u16(&p, m->timeout);
-	put_u16(&p, m->win_offset);
 	put_u8(&p, m->win_size);
-	put_u16(&p, m->event_counter);
-	put_u32(&p, m->anchor_sync_tick);
+	put_i32(&p, m->anchor_offset_us);
+	put_u32(&p, m->send_age_us);
 
 	return finalize(buf, HANDOFF_PAYLOAD_LEN);
 }
@@ -156,17 +167,32 @@ int peer_msg_decode(const uint8_t *buf, size_t len,
 		ho->ch_map_lo = get_u32(&p);
 		ho->ch_map_hi = get_u8(&p);
 		ho->hop = get_u8(&p);
-		ho->sca = get_u8(&p);
+		ho->csa2 = get_u8(&p);
 		ho->interval = get_u16(&p);
 		ho->latency = get_u16(&p);
 		ho->timeout = get_u16(&p);
-		ho->win_offset = get_u16(&p);
 		ho->win_size = get_u8(&p);
-		ho->event_counter = get_u16(&p);
-		ho->anchor_sync_tick = get_u32(&p);
+		ho->anchor_offset_us = get_i32(&p);
+		ho->send_age_us = get_u32(&p);
 		return PEER_MSG_HANDOFF;
 
 	default:
 		return 0;
 	}
+}
+
+bool peer_msg_handoff_set_age(uint8_t *buf, size_t len, uint32_t send_age_us)
+{
+	const size_t frame_len = 2 + HANDOFF_PAYLOAD_LEN;
+
+	if (buf == NULL || len != frame_len + 1 || buf[0] != PEER_MSG_HANDOFF ||
+	    buf[1] != HANDOFF_PAYLOAD_LEN) {
+		return false;
+	}
+
+	uint8_t *p = &buf[HANDOFF_AGE_OFFSET];
+
+	put_u32(&p, send_age_us);
+	buf[frame_len] = xor_checksum(buf, frame_len);
+	return true;
 }

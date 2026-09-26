@@ -36,6 +36,8 @@ static NRF_GPIO_Type *sync_reg;
 static uint32_t sync_mask;
 static uint32_t sync_pin_idx;
 static atomic_t capture_count;   /* number of edges captured by the ISR (for diagnostics) */
+static uint32_t recent[SYNC_LINE_RECENT_MAX];   /* ring of the most recent capture ticks (ISR writes, read under irq_lock) */
+static uint8_t recent_next;                     /* next ring slot to write */
 static uint32_t dbg_low_seen;    /* last pulse: the level read from the input buffer while driven low */
 static uint32_t dbg_high_seen;   /* last pulse: the level read after release */
 /* GPIOTE instance register base for the GPIO port this pin belongs to (gpio0→gpiote30); read channel config directly during diagnostics */
@@ -57,6 +59,8 @@ static void sync_edge_isr(const struct device *port, struct gpio_callback *cb, u
 
 	atomic_set(&last_tick, (atomic_val_t)tick);
 	atomic_inc(&capture_count);
+	recent[recent_next] = tick;
+	recent_next = (uint8_t)((recent_next + 1u) % SYNC_LINE_RECENT_MAX);
 
 	if (user_cb != NULL) {
 		user_cb(tick);
@@ -191,12 +195,13 @@ int sync_line_init(sync_capture_cb_t on_capture)
 #endif
 }
 
-void sync_line_emit(void)
+uint32_t sync_line_emit(void)
 {
 #if TRI_SYNC_PRESENT
+	uint32_t emit_tick = 0;
 #ifdef SYNC_HOLD_LOW_TEST
 	if (single_pin) {
-		return;   /* test mode: pin held low, no pulses sent */
+		return 0;   /* test mode: pin held low, no pulses sent */
 	}
 #endif
 	if (single_pin) {
@@ -215,6 +220,7 @@ void sync_line_emit(void)
 		 * (consistent with the design: the emitting board also stamps a tick in its own time base); other boards capture it in their own ISRs, with error = ISR latency (µs-level). */
 		const uint32_t tick = radio_now_us();
 
+		emit_tick = tick;
 		atomic_set(&last_tick, (atomic_val_t)tick);
 		(void)gpio_pin_configure_dt(&sync_out, GPIO_OUTPUT_LOW | GPIO_OPEN_DRAIN | GPIO_INPUT);
 		k_busy_wait(SYNC_PULSE_US);
@@ -227,10 +233,37 @@ void sync_line_emit(void)
 		dbg_high_seen = (nrf_gpio_port_in_read(sync_reg) & sync_mask) ? 1U : 0U;
 	} else {
 		/* DK two pins: always-on open-drain, assert (drive low) → hold → release (back high). Under ACTIVE_LOW, set(1) = pull low. */
+		emit_tick = radio_now_us();
 		gpio_pin_set_dt(&sync_out, 1);
 		k_busy_wait(SYNC_PULSE_US);
 		gpio_pin_set_dt(&sync_out, 0);
 	}
+	return emit_tick;
+#else
+	return 0;
+#endif
+}
+
+size_t sync_line_recent_captures(uint32_t *out, size_t cap)
+{
+#if TRI_SYNC_PRESENT
+	const unsigned int key = irq_lock();
+	const uint32_t total = (uint32_t)atomic_get(&capture_count);
+	const size_t have = total < SYNC_LINE_RECENT_MAX ? (size_t)total : SYNC_LINE_RECENT_MAX;
+	size_t n = 0;
+
+	for (size_t i = 0; i < have && n < cap; i++) {
+		/* recent_next points at the oldest slot (or an empty one); walking backwards gives newest -> oldest */
+		const size_t idx = (recent_next + SYNC_LINE_RECENT_MAX - 1 - i) % SYNC_LINE_RECENT_MAX;
+
+		out[n++] = recent[idx];
+	}
+	irq_unlock(key);
+	return n;
+#else
+	ARG_UNUSED(out);
+	ARG_UNUSED(cap);
+	return 0;
 #endif
 }
 

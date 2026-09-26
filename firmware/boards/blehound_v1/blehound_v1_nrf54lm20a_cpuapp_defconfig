@@ -29,3 +29,6 @@ CONFIG_CLOCK_CONTROL_NRF_K32SRC_500PPM=y
 # GPIOTE handler pool: SYNC (gpio0/gpiote30) + inter-chip REQ (gpio1/gpiote20) belong to two different gpiote
 # instances, each needing one event handler. The default of 1 is not enough.
 CONFIG_NRFX_GPIOTE_NUM_OF_EVT_HANDLERS=4
+
+# Inter-chip upstream slave port: peer_link uses nrfx_spis on spi21 directly (see the board dts).
+CONFIG_NRFX_SPIS=y

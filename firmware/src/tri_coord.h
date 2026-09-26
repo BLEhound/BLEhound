@@ -8,6 +8,13 @@
  *   - Handing the most recent SYNC edge tick (sync_epoch) to host_iface to fill the frame header, so the host can align the three merged streams.
  *
  * Whoever captures becomes the temporary master (the three boards are peers): there is no fixed follow master. The periodic time-base heartbeat is sent by board 0 (see periodic).
+ *
+ * Plan A (2026-09-27): besides following itself, the board that caught the CONNECT_IND hands the connection
+ * parameters straight to the other two over the inter-board SPI (downstream via the master port write, upstream by
+ * asking the peer to read via REQ); the anchor is expressed as "offset from this hit's SYNC edge" (peer_anchor.h).
+ * The receiver converts it into its own time base and drops it into conn_follower's inject mailbox -- the same
+ * take-over path as the host USB relay (HOST_CMD_FOLLOW); whichever arrives first takes over, the later one is
+ * ignored as a duplicate.
  */
 
 #ifndef TRI_COORD_H_
@@ -20,12 +27,15 @@
 
 /** Coordination statistics (for observability) */
 struct tri_coord_stats {
-	uint32_t own_hits;       /**< number of CONNECT_INDs this board captured and processed */
-	uint32_t peer_hits;      /**< number of hit notifications received from other boards */
-	uint32_t handoffs_sent;  /**< number of connection handoffs sent (strategy B/C) */
-	uint32_t handoffs_recv;  /**< number of connection handoffs received */
-	uint32_t sync_emits;     /**< number of times this board pulled a SYNC edge */
-	uint32_t tx_dropped;     /**< messages dropped because the inter-board transmit queue was full (should always be 0) */
+	uint32_t own_hits;         /**< CONNECT_INDs caught and handled by this board */
+	uint32_t peer_hits;        /**< HIT messages received from peers (incl. the periodic link self-test, +2 per board per 10 s) */
+	uint32_t handoffs_sent;    /**< connection handoffs sent (counted once per message, both links) */
+	uint32_t handoffs_recv;    /**< connection handoffs received */
+	uint32_t handoffs_injected;/**< handoffs whose anchor matched and were handed to the follower to take over */
+	uint32_t handoffs_unmatched;/**< handoffs dropped because no matching SYNC edge was found among the recent captures */
+	uint32_t rx_bad;           /**< inter-board frames received but undecodable (checksum/type/length) */
+	uint32_t sync_emits;       /**< SYNC edges pulled by this board */
+	uint32_t tx_dropped;       /**< messages dropped because the inter-board TX queue was full (should stay 0) */
 };
 
 /** Initialize: bring up the SYNC line and inter-board link, and register the claim gate. Call after radio_init/conn_follower_init. */

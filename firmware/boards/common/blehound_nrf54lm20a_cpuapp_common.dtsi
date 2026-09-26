@@ -89,12 +89,13 @@
 	};
 
 	/*
-	 * Inter-chip link (design 4.2): per chip a downstream master port SPIM00 (pins in the board pinctrl) +
-	 * CS and two REQ lines:
-	 *   CS = P2.05 (GPIO, attached to spi_config at runtime by peer_link)
+	 * Inter-chip link (design 4.2): per chip a downstream master port (software SPI on the GPIOs declared
+	 * per board revision, tri_peer_spim) + CS and two REQ lines, and an upstream slave port (SPIS on spi21,
+	 * pins declared per board revision, tri_peer_spis):
+	 *   CS = P2.05 (GPIO, driven by peer_link's bit-banged master port)
 	 *   REQ_IN (the downstream slave calling me) = P1.29; REQ_OUT (me calling the upstream master) = P1.02
-	 * The upstream slave port SPIS (P1.30/P1.31/P1.00/P1.01) is board bring-up work; peer_link does not
-	 * load SPIS yet, so it is not claimed here.
+	 * P1.01 (slave CSN) and P1.02 (REQ_OUT) are the NFC pads: see the &nfct override below.
+	 * Verified on the V1 flywire boards 2026-09-27 (all three links, both directions).
 	 */
 	tri_peer {
 		compatible = "gpio-keys";
@@ -121,7 +122,6 @@
 		tri-peer-cs = &peer_cs;
 		tri-req-in = &req_in;
 		tri-req-out = &req_out;
-		tri-peer-spi = &spi00;
 		/* nRF21540 FEM control port: the nodes are defined per board revision (pins moved on V2). */
 		fem-pdn = &fem_pdn;
 		fem-rxen = &fem_rxen;
@@ -143,13 +143,22 @@
 };
 
 /*
- * The board has **no 32.768 kHz crystal** (XL1/XL2 = P1.00/P1.01 are used as inter-chip SPI GPIOs);
- * LFCLK runs from the internal RC (CONFIG_CLOCK_CONTROL_NRF_K32SRC_RC in the board defconfig).
- * The lfxo node values are inherited from the DK and unused.
+ * The board has **no 32.768 kHz crystal**; LFCLK runs from the internal RC (CONFIG_CLOCK_CONTROL_NRF_K32SRC_RC
+ * in the board defconfig). On the nRF54LM20A the XL1/XL2 pads are P1.20/P1.21 (P1.20 is the FEM MODE line here),
+ * so the internal load capacitors must stay disconnected: "external" makes soc.c skip programming INTCAP.
  */
 &lfxo {
-	load-capacitors = "internal";
-	load-capacitance-femtofarad = <17000>;
+	load-capacitors = "external";
+};
+
+/*
+ * P1.01 / P1.02 are the NFC1 / NFC2 antenna pads on the nRF54LM20A (QFN52 pads 11/12) and come out of reset in
+ * NFC mode: as GPIOs they read 0 and cannot be driven (found on real boards 2026-09-27: the inter-chip slave-port
+ * CSN on P1.01 and REQ_OUT on P1.02 were both dead). This property makes SystemInit write NFCT.PADCONFIG.ENABLE=0
+ * so they become ordinary GPIOs.
+ */
+&nfct {
+	nfct-pins-as-gpios;
 };
 
 /* 32 MHz crystal: the radio timing depends on it. Load caps inherited from the DK design. */
@@ -221,11 +230,12 @@ zephyr_udc0: &usbhs {
 	status = "okay";
 };
 
-/* Inter-chip downstream master port; pinctrl (spi00_default / spi00_sleep) comes from the board's -pinctrl.dtsi. */
+/*
+ * Inter-chip downstream master port. SPIM00 is NOT used: on the nRF54LM20A its SCK only comes out on the dedicated
+ * clock pin P2.01 (measured 2026-09-27 on V1: SCK on P2.02 never toggled during a transfer), and on V1 that pin is
+ * the old shared SYNC net. peer_link bit-bangs the master port on the GPIOs declared per board revision
+ * (tri-spim-sck / tri-spim-mosi / tri-spim-miso + tri-peer-cs), so the spi00 node stays disabled.
+ */
 &spi00 {
-	status = "okay";
-	cs-gpios = <&gpio2 5 GPIO_ACTIVE_LOW>;
-	pinctrl-0 = <&spi00_default>;
-	pinctrl-1 = <&spi00_sleep>;
-	pinctrl-names = "default", "sleep";
+	status = "disabled";
 };

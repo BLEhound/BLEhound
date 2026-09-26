@@ -63,6 +63,71 @@
 			zephyr,code = <15>;
 		};
 	};
+
+	/*
+	 * Inter-chip upstream slave port (SPIS, PERI domain instance spi21; for the link topology see src/peer_link.h).
+	 * peer_link drives it through nrfx_spis directly (the pins are taken from these gpio-keys entries and handed to
+	 * nrfx, the spi21 node itself stays disabled so Zephyr's SPIS driver does not claim it).
+	 * V2 (revised board): SCK moved to the clock pin P1.03; MOSI=P1.31 MISO=P1.00 CSN=P1.01 unchanged.
+	 */
+	tri_peer_spis {
+		compatible = "gpio-keys";
+		peer_spis_sck: peer_spis_sck {
+			gpios = <&gpio1 3 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <16>;
+		};
+		peer_spis_mosi: peer_spis_mosi {
+			gpios = <&gpio1 31 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <17>;
+		};
+		peer_spis_miso: peer_spis_miso {
+			gpios = <&gpio1 0 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <18>;
+		};
+		peer_spis_csn: peer_spis_csn {
+			gpios = <&gpio1 1 GPIO_ACTIVE_LOW>;
+			zephyr,code = <19>;
+		};
+	};
+
+	/*
+	 * Inter-chip downstream master port pins (software SPI master in peer_link; see the common dtsi for why).
+	 * V2 (revised board): SCK=P2.01 MOSI=P2.02 MISO=P2.04 (bit-banged for now; P2.01 is the SPIM00 clock pin, hardware SPIM00 possible later).
+	 */
+	tri_peer_spim {
+		compatible = "gpio-keys";
+		peer_spim_sck: peer_spim_sck {
+			gpios = <&gpio2 1 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <20>;
+		};
+		peer_spim_mosi: peer_spim_mosi {
+			gpios = <&gpio2 2 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <21>;
+		};
+		peer_spim_miso: peer_spim_miso {
+			gpios = <&gpio2 4 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <22>;
+		};
+	};
+
+	aliases {
+		tri-spis-sck = &peer_spis_sck;
+		tri-spis-mosi = &peer_spis_mosi;
+		tri-spis-miso = &peer_spis_miso;
+		tri-spis-csn = &peer_spis_csn;
+		tri-spim-sck = &peer_spim_sck;
+		tri-spim-mosi = &peer_spim_mosi;
+		tri-spim-miso = &peer_spim_miso;
+	};
+};
+
+/* Upstream slave port instance: SPIS binding so nrfx's SPIS driver is selectable, kept disabled on purpose. */
+&spi21 {
+	compatible = "nordic,nrf-spis";
+	/delete-property/ rx-delay-supported;
+	/delete-property/ rx-delay;
+	def-char = <0>;
+	status = "disabled";
 };
 
 /* Include default memory partition configuration file */

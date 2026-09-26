@@ -163,6 +163,13 @@ struct conn_follow_inject {
 void conn_follower_request_inject(const struct conn_follow_inject *p);
 
 /**
+ * event0 anchor of a primary-channel CONNECT_IND (this board's TIMER time base, us): end of the connect packet +
+ * txWinDelay + WinOffset, exactly as start_following computes it. The inter-board handoff (tri_coord) converts it
+ * for the other boards. Only looks at WinOffset and the packet length; the caller guarantees it is a CONNECT_IND.
+ */
+uint32_t conn_follower_connect_ind_anchor0(const struct radio_packet *pkt);
+
+/**
  * Key hint (HOST_CMD_LL_CTRL_HINT): an encrypted LL control PDU the host decrypted with the LTK.
  * May be called from the CDC interrupt context: it only posts to a mailbox; the actual registration
  * on the slot happens in the radio interrupt (poll_hint).

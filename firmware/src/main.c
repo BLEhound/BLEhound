@@ -23,6 +23,7 @@
 #include "conn_follower.h"
 #include "board_role.h"
 #include "tri_coord.h"
+#include "peer_link.h"
 #include "sync_line.h"
 #include "led_policy.h"
 #include "adv_filter.h"
@@ -446,6 +447,8 @@ static int sniffer_start(void)
 
 	/* The radio is already scanning; the follower records the scan channel and takes over the subsequent state machine */
 	conn_follower_init(active_channel);
+	/* Immediate consumption of the inject/hint mailboxes: request_* calls radio_kick(), which polls right away in the radio's serial domain. */
+	radio_set_kick_handler(conn_follower_poll_host_requests);
 
 	/* Tri-device scheme §5.1: each device stubbornly guards its strap-assigned advertising channel and does **not** round-robin —
 	 * this is the prerequisite for three devices to cover 37/38/39 simultaneously and push the CONNECT_IND hit rate to ~100%. When
@@ -674,11 +677,18 @@ int main(void)
 			struct tri_coord_stats tc;
 
 			tri_coord_get_stats(&tc);
-			LOG_INF("  tri-device[id=%u]: own hits %u, peer hits %u, handoffs sent %u/recv %u, SYNC emit %u/capture %u, epoch=%u, inter-board tx dropped %u, LED=%s",
+			struct peer_link_stats pl;
+
+			peer_link_get_stats(&pl);
+			LOG_INF("  tri-device[id=%u]: own hits %u, peer hits %u, handoffs sent %u/recv %u, SYNC emit %u/capture %u, epoch=%u, inter-board tx dropped %u, LED=%s, handoff injected %u/unmatched %u, rx bad %u",
 				g_role.board_id, tc.own_hits, tc.peer_hits,
 				tc.handoffs_sent, tc.handoffs_recv, tc.sync_emits,
 				sync_line_capture_count(), tri_coord_sync_epoch(),
-				tc.tx_dropped, led_state_name(led_state_last));
+				tc.tx_dropped, led_state_name(led_state_last),
+				tc.handoffs_injected, tc.handoffs_unmatched, tc.rx_bad);
+			LOG_INF("  inter-board link: SPIM tx %u (err %u), REQ reads %u, REQ out %u, SPIS xfers %u/msgs %u (arm err %u, %s), last err %d",
+				pl.spim_tx, pl.spim_tx_err, pl.spim_rx, pl.req_out, pl.spis_xfer, pl.spis_rx,
+				pl.spis_arm_err, pl.spis_ready ? "armed" : "no slave port", pl.last_err);
 			sync_line_log_debug();
 			LOG_INF("  multi-target: currently tracking %u (peak %u), CONNECT_IND %u,"
 				"event %u, data packets %u, collisions %u, lost %u, PHY switches %u, relay takeovers %u, relocks %u,"

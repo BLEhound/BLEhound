@@ -14,10 +14,12 @@ choice
 	  work is divided after catching CONNECT_IND.
 
 config TRI_STRATEGY_SELF
-	bool "A Self-follow (the board that caught it follows, recommended)"
+	bool "A Self-follow + inter-board handoff (the board that caught it follows and pushes the parameters to the other two over the inter-board SPI, recommended)"
 	help
 	  The board that caught the anchor follows directly, zero coordination
-	  latency. No redundancy or load balancing -- the simplest and most stable.
+	  latency, and hands the connection parameters to the other two boards over
+	  the inter-board link so all three follow (arrives within 1 ms, no host
+	  needed); the host USB relay becomes the fallback.
 
 config TRI_STRATEGY_HANDOFF
 	bool "B Handoff (the catching board hands the connection to its downstream neighbor)"

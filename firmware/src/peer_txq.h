@@ -27,6 +27,7 @@
 struct peer_txq {
 	uint8_t buf[PEER_TXQ_SLOTS][PEER_MSG_MAX];
 	uint8_t len[PEER_TXQ_SLOTS];
+	uint32_t ref_tick[PEER_TXQ_SLOTS];   /* reference tick carried with the message to the sending thread (e.g. the hit SYNC edge) */
 	volatile uint8_t head;    /* position the consumer reads from */
 	volatile uint8_t tail;    /* position the producer writes to */
 	uint32_t dropped;         /* messages dropped because the queue was full (modified only by the producer) */
@@ -35,10 +36,10 @@ struct peer_txq {
 void peer_txq_init(struct peer_txq *q);
 
 /** Producer: enqueue one message (1..PEER_MSG_MAX bytes). Returns false when full or the length is invalid (dropped++ when full). */
-bool peer_txq_push(struct peer_txq *q, const uint8_t *msg, size_t len);
+bool peer_txq_push(struct peer_txq *q, const uint8_t *msg, size_t len, uint32_t ref_tick);
 
 /** Consumer: dequeue the oldest message into out (capacity cap). Returns 0 when empty or cap is too small (does not dequeue when too small). */
-size_t peer_txq_pop(struct peer_txq *q, uint8_t *out, size_t cap);
+size_t peer_txq_pop(struct peer_txq *q, uint8_t *out, size_t cap, uint32_t *ref_tick);
 
 bool peer_txq_empty(const struct peer_txq *q);
 

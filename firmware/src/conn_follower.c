@@ -643,6 +643,15 @@ static void start_following(const struct radio_packet *pkt)
 	start_following_on(pkt, PHY_1M, TX_WIN_DELAY_US, false);
 }
 
+uint32_t conn_follower_connect_ind_anchor0(const struct radio_packet *pkt)
+{
+	const uint8_t *ll = &pkt->pdu[2 + 12];
+	const uint16_t win_offset = (uint16_t)ll[8] | ((uint16_t)ll[9] << 8);
+
+	return pkt->timestamp_us + pdu_tail_air_us(PHY_1M, pkt->pdu_len) + TX_WIN_DELAY_US +
+	       (uint32_t)win_offset * UNIT_1_25_MS_US;
+}
+
 /* AUX_CONNECT_REQ via a secondary channel: txWinDelay is 2.5ms (1M/2M) or 3.75ms (Coded) per the secondary-channel PHY. */
 static void start_following_aux(const struct radio_packet *pkt)
 {
@@ -722,6 +731,7 @@ void conn_follower_request_inject(const struct conn_follow_inject *p)
 	g_inject = *p;
 	g_inject_pending = true;
 	irq_unlock(key);
+	radio_kick();   /* poll_inject right away in the radio's serial domain, do not wait for the next RX interrupt (catch event 0) */
 }
 
 static void handle_ctrl_pdu(struct conn_slot *s, const uint8_t *ctrl, uint8_t len, bool hinted);
@@ -737,6 +747,7 @@ void conn_follower_request_hint(const struct conn_follow_hint *h)
 	g_hint = *h;
 	g_hint_pending = true;
 	irq_unlock(key);
+	radio_kick();
 }
 
 static void poll_hint(void)

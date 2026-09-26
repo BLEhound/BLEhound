@@ -21,7 +21,7 @@ void peer_txq_init(struct peer_txq *q)
 	memset(q, 0, sizeof(*q));
 }
 
-bool peer_txq_push(struct peer_txq *q, const uint8_t *msg, size_t len)
+bool peer_txq_push(struct peer_txq *q, const uint8_t *msg, size_t len, uint32_t ref_tick)
 {
 	if (msg == NULL || len == 0u || len > PEER_MSG_MAX) {
 		return false;
@@ -37,12 +37,13 @@ bool peer_txq_push(struct peer_txq *q, const uint8_t *msg, size_t len)
 
 	memcpy(q->buf[tail], msg, len);
 	q->len[tail] = (uint8_t)len;
+	q->ref_tick[tail] = ref_tick;
 	COMPILER_BARRIER();
 	q->tail = nt;   /* publish last, so the data is ready by the time the consumer sees tail */
 	return true;
 }
 
-size_t peer_txq_pop(struct peer_txq *q, uint8_t *out, size_t cap)
+size_t peer_txq_pop(struct peer_txq *q, uint8_t *out, size_t cap, uint32_t *ref_tick)
 {
 	const uint8_t head = q->head;
 
@@ -58,6 +59,9 @@ size_t peer_txq_pop(struct peer_txq *q, uint8_t *out, size_t cap)
 	}
 
 	memcpy(out, q->buf[head], len);
+	if (ref_tick != NULL) {
+		*ref_tick = q->ref_tick[head];
+	}
 	COMPILER_BARRIER();
 	q->head = next_idx(head);   /* release the slot only after the data is read, so the producer may overwrite it */
 	return len;
