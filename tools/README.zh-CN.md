@@ -14,6 +14,7 @@
 | `install_extcap.sh` | 把 Wireshark extcap 插件复制到 Wireshark 的 extcap 目录 |
 | `rtt.sh` | 挂接 SEGGER RTT 以查看固件日志 |
 | `verify_flash.sh` | 逐字节比对片上三个分区（MCUboot / 加载器 / 应用）与构建产物 |
+| `keygen.sh` | 在仓库外（`~/.blehound/keys/`）生成 MCUboot 签名密钥并导出公钥 |
 | `dfu.sh` | 不用 J-Link 的 USB DFU：经抓包口进加载器，用 `nrfutil mcu-manager` 上传签名应用并复位 |
 | `cdc_test.sh` | 对嗅探器串口做快速的 USB-CDC 健全性检查 |
 

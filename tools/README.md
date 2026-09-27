@@ -14,6 +14,7 @@ Helper scripts for building, flashing, and debugging BLEhound.
 | `install_extcap.sh` | Copy the Wireshark extcap plugin into Wireshark's extcap directory |
 | `rtt.sh` | Attach to SEGGER RTT for firmware logs |
 | `verify_flash.sh` | Byte-compare the three on-chip regions (MCUboot / loader / app) against the build outputs |
+| `keygen.sh` | Create the MCUboot signing key outside the repo (`~/.blehound/keys/`) and export its public half |
 | `dfu.sh` | USB DFU without J-Link: enter the loader over the capture port, upload the signed app with `nrfutil mcu-manager`, reset |
 | `cdc_test.sh` | Quick USB-CDC sanity check of the sniffer serial port |
 

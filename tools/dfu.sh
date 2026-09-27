@@ -62,13 +62,15 @@ wait_loader() {   # wait until the number of "BLEhound Loader" devices becomes $
 dfu_one() {   # $1 = serial port, $2 = image
 	local port="$1" img="$2"
 	echo "== $port: entering DFU mode"
-	local before; before="$(count_loader)"; before="${before:-0}"
-	if enter_dfu "$port" 2>/dev/null; then
-		wait_loader $((before + 1)) || echo "   (no new BLEhound Loader enumerated, maybe already in the loader, continuing)"
+	# Ask over SMP first: a board already in the loader (interrupted update / rejected image) must not get capture commands.
+	if "$NRFUTIL_BIN" mcu-manager serial image-list --serial-port "$port" --timeout 2 >/dev/null 2>&1; then
+		echo "   already in the loader, skipping the enter step"
 	else
-		echo "   serial port cannot be opened, assuming the board is already in the loader"
+		local before; before="$(count_loader)"; before="${before:-0}"
+		enter_dfu "$port" || { echo "   serial port cannot be opened, cannot send the enter command"; return 1; }
+		wait_loader $((before + 1)) || echo "   (no new BLEhound Loader enumerated, trying anyway)"
+		sleep 1
 	fi
-	sleep 1
 	echo "== $port: images reported by the loader"
 	"$NRFUTIL_BIN" mcu-manager serial image-list --serial-port "$port" --timeout 10 | grep -E "slot|version" | paste - - | sed 's/^/   /'
 	echo "== $port: uploading $img"

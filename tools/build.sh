@@ -50,6 +50,19 @@ else
     BUILD_DIR="${BUILD_DIR:-$PROJ_DIR/build_dongle}"
 fi
 BLEHOUND_ARGS="-DBOARD_ROOT=$PROJ_DIR/firmware"
+
+# MCUboot signing key: BLEHOUND_SIGNING_KEY (a PEM) if set, else ~/.blehound/keys/blehound_ed25519.pem
+# (made by tools/keygen.sh, **never committed**; the public key is kept in firmware/keys/blehound_ed25519.pub.pem).
+# With neither present the build falls back to MCUboot's bundled development key and warns: such an MCUboot only
+# accepts images signed with the dev key and must not be released. After changing the key the public key inside
+# MCUboot changes too, so existing boards need one J-Link programming of the merged hex before DFU accepts new images.
+SIGNING_KEY="${BLEHOUND_SIGNING_KEY:-$HOME/.blehound/keys/blehound_ed25519.pem}"
+if [ -f "$SIGNING_KEY" ]; then
+    BLEHOUND_ARGS="$BLEHOUND_ARGS -DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE=\"$SIGNING_KEY\""
+    echo "== SIGN KEY   : $SIGNING_KEY"
+else
+    echo "WARNING: no signing key at $SIGNING_KEY, using MCUboot's development key (local debugging only, do not release). Create one with tools/keygen.sh"
+fi
 shift || true
 # Allow the "tools/build.sh -- --pristine" form that passes only west args (when the first arg is --, do not treat it as the board name).
 # To pass cmake args (-D...) add another -- after the west args: tools/build.sh -- --pristine -- -DCONFIG_X=y

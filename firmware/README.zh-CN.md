@@ -66,7 +66,14 @@ BLEhound/tools/verify_flash.sh <J-Link SN>      # 逐字节比对片上三个分
 ```
 
 `dfu.sh` 往抓包口发 `HOST_CMD_ENTER_DFU`，板子重新枚举为 "BLEhound Loader"（PID 0x5210），
-再由 `nrfutil mcu-manager` 经 SMP 上传镜像。
+再由 `nrfutil mcu-manager` 经 SMP 上传镜像。BLEhound Analyzer 内置了同样的流程
+（设备面板 →「升级固件…」）。
+
+**签名密钥。** MCUboot 只启动用「公钥已编进它」的那把 key 签的镜像。`tools/keygen.sh`
+在仓库外生成 ed25519 密钥 `~/.blehound/keys/blehound_ed25519.pem`（切勿入库），并把公钥导出到
+`firmware/keys/blehound_ed25519.pub.pem`；`tools/build.sh` 会自动使用私钥（也可用
+`BLEHOUND_SIGNING_KEY` 指定）。没有 key 时回落到 MCUboot 公开的开发 key 并告警：本地调试可以，
+不能发布。换 key 会改变 MCUboot，老板子要先用 J-Link 重烧一次 `blehound_merged.hex` 才认新签名。
 
 ## 配置（Kconfig）
 

@@ -71,6 +71,16 @@ BLEhound/tools/verify_flash.sh <J-Link SN>      # byte-compare all three regions
 
 `dfu.sh` sends `HOST_CMD_ENTER_DFU` on the capture port, the board re-enumerates as
 "BLEhound Loader" (PID 0x5210) and `nrfutil mcu-manager` uploads the image over SMP.
+BLEhound Analyzer has the same flow built in (device panel → "Update firmware…").
+
+**Signing key.** MCUboot only boots images signed with the key whose public half is
+compiled into it. `tools/keygen.sh` creates an ed25519 key at
+`~/.blehound/keys/blehound_ed25519.pem` (outside the repo, never commit it) and exports
+the public key to `firmware/keys/blehound_ed25519.pub.pem`; `tools/build.sh` picks the
+private key up automatically (or set `BLEHOUND_SIGNING_KEY`). Without a key the build
+falls back to MCUboot's public development key and warns: fine for local debugging,
+not for release. Changing the key changes MCUboot, so existing boards need one J-Link
+programming of `blehound_merged.hex` before they accept images signed with the new key.
 
 ## Configuration (Kconfig)
 
