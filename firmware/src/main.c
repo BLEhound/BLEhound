@@ -17,6 +17,10 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/reboot.h>
+#if IS_ENABLED(CONFIG_RETENTION_BOOT_MODE)
+#include <zephyr/retention/bootmode.h>
+#endif
 
 #include "radio_hal.h"
 #include "host_iface.h"
@@ -77,6 +81,8 @@ static const char fw_version[] = BLEHOUND_FW_VERSION;
 
 /* Host QUERY_STATUS request flag (set in the CDC interrupt, consumed by the capture thread) */
 static atomic_t status_requested;
+/* HOST_CMD_ENTER_DFU only sets this in the CDC interrupt; writing the boot mode + reset happens in the capture thread */
+static atomic_t dfu_requested;
 /* Mirror of the capture configuration: commands update it in the CDC interrupt, the status frame reads it in the capture thread. Single-byte accesses are naturally atomic. */
 static volatile bool st_hopping;
 static volatile bool st_single_target = true;   /* matches the conn_follower default */
@@ -296,6 +302,30 @@ static void on_radio_packet(const struct radio_packet *pkt)
 }
 
 /* Host command. Executed in CDC interrupt context; only does parameter validation and register-level setup. */
+/*
+ * Enter firmware update mode: stop the radio, write the boot mode into gpregret1 (lost on power-off,
+ * kept across a soft reset), reset. MCUboot sees BOOT_MODE_TYPE_BOOTLOADER and starts the firmware
+ * loader (image-1), which writes the new app into image-0 and resets back. Firmware built without DFU
+ * (not via sysbuild + MCUboot) only logs.
+ */
+static void enter_dfu_loader(void)
+{
+#if IS_ENABLED(CONFIG_RETENTION_BOOT_MODE)
+	radio_rx_stop();
+	const int rc = bootmode_set(BOOT_MODE_TYPE_BOOTLOADER);
+
+	if (rc != 0) {
+		LOG_ERR("DFU: bootmode_set failed (%d), staying in app", rc);
+		return;
+	}
+	LOG_INF("DFU: rebooting into firmware loader");
+	k_sleep(K_MSEC(50));   /* let the log / USB push out the last bytes */
+	sys_reboot(SYS_REBOOT_COLD);
+#else
+	LOG_WRN("DFU: not built into this firmware, ignoring");
+#endif
+}
+
 static void on_host_command(uint8_t cmd, const uint8_t *args, uint8_t args_len)
 {
 	switch (cmd) {
@@ -375,6 +405,10 @@ static void on_host_command(uint8_t cmd, const uint8_t *args, uint8_t args_len)
 	case HOST_CMD_QUERY_STATUS:
 		/* The status frame shares the TX buffer with capture frames and can only be sent from the capture thread; only set the flag here. */
 		atomic_set(&status_requested, 1);
+		break;
+
+	case HOST_CMD_ENTER_DFU:
+		atomic_set(&dfu_requested, 1);
 		break;
 
 	case HOST_CMD_FOLLOW: {
@@ -524,6 +558,10 @@ static void sniffer_thread(void *p1, void *p2, void *p3)
 				.fw_version = fw_version,
 			};
 			host_iface_send_status(&hs);
+		}
+
+		if (atomic_cas(&dfu_requested, 1, 0)) {
+			enter_dfu_loader();
 		}
 
 		if (got != 0) {

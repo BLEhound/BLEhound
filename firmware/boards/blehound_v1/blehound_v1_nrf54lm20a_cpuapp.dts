@@ -129,5 +129,6 @@
 	status = "disabled";
 };
 
-/* Include default memory partition configuration file */
+/* Default memory partition table, then the DFU layout on top of it (MCUboot + firmware loader + app). */
 #include <vendor/nordic/nrf54lm20a_cpuapp_partition.dtsi>
+#include "../common/blehound_partitions.dtsi"

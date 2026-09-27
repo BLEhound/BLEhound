@@ -53,6 +53,21 @@ RECOVER=1 BLEhound/tools/flash.sh       # recover (unlock APPROTECT) first
 每块板烧录的都是同一份固件；三板方案下，把三块都烧上，并连接你正在编程的那块板的
 SWD 排针。
 
+构建是 sysbuild 三镜像（MCUboot + USB 固件加载器 + 签名应用，布局见
+`boards/common/blehound_partitions.dtsi`）。产物统一以固定名字收在 `build_dongle/blehound/`：
+`blehound_mcu_boot.*`、`blehound_loader.*`、`blehound_app.*`（各有 bin/hex/elf/map）、
+`blehound_ota.bin` / `blehound_ota.zip`（DFU 上传用）和 `blehound_merged.hex`（整片，J-Link 烧这个）。
+之后升级不再需要 J-Link：
+
+```bash
+BLEhound/tools/dfu.sh /dev/cu.usbmodemXXXX      # 对一块板做 USB DFU（默认用 build_dongle/blehound/blehound_ota.bin）
+BLEhound/tools/dfu.sh all                       # 依次升级每块板
+BLEhound/tools/verify_flash.sh <J-Link SN>      # 逐字节比对片上三个分区
+```
+
+`dfu.sh` 往抓包口发 `HOST_CMD_ENTER_DFU`，板子重新枚举为 "BLEhound Loader"（PID 0x5210），
+再由 `nrfutil mcu-manager` 经 SMP 上传镜像。
+
 ## 配置（Kconfig）
 
 | 选项 | 含义 |

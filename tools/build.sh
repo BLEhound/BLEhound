@@ -10,7 +10,12 @@
 # Usage:
 #   tools/build.sh                          # default: first-batch board V1 = board target blehound_v1/nrf54lm20a/cpuapp
 #                                           #   (board definition in firmware/boards/blehound_v1/, BOARD_ROOT=firmware)
-#                                           #   output build_dongle/firmware/zephyr/zephyr.hex
+#                                           #   outputs (sysbuild, three images; DFU design in firmware/sysbuild.conf) collected in build_dongle/blehound/:
+#                                           #     blehound_mcu_boot.{bin,hex,elf,map}  MCUboot
+#                                           #     blehound_loader.{bin,hex,elf,map}    firmware loader
+#                                           #     blehound_app.{bin,hex,elf,map}       application (signed image)
+#                                           #     blehound_ota.bin / blehound_ota.zip  app image for DFU upload / DFU package
+#                                           #     blehound_merged.hex                  whole-chip image (MCUboot+loader+app)
 #   tools/build.sh -- --pristine            # full rebuild
 #   V2=1 tools/build.sh                     # revised board V2 = board target blehound_v2/nrf54lm20a/cpuapp, output build_dongle_v2/
 #                                           #   (inter-chip SPIM00 on the datasheet's dedicated pins P2.01/P2.02/P2.04, FEM SPI moved to P1)
@@ -47,6 +52,7 @@ fi
 BLEHOUND_ARGS="-DBOARD_ROOT=$PROJ_DIR/firmware"
 shift || true
 # Allow the "tools/build.sh -- --pristine" form that passes only west args (when the first arg is --, do not treat it as the board name).
+# To pass cmake args (-D...) add another -- after the west args: tools/build.sh -- --pristine -- -DCONFIG_X=y
 [ "${BOARD}" = "--" ] && BOARD="$( [ "${V2:-0}" = "1" ] && echo blehound_v2/nrf54lm20a/cpuapp || echo blehound_v1/nrf54lm20a/cpuapp )"
 
 echo "== NCS_TOPDIR : $NCS_TOPDIR"

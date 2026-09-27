@@ -57,6 +57,21 @@ RECOVER=1 BLEhound/tools/flash.sh       # recover (unlock APPROTECT) first
 Each board takes the same firmware; for a three-board setup, flash all three and
 connect the SWD header of whichever board you are programming.
 
+The build is a sysbuild with three images (MCUboot + USB firmware loader + signed app,
+layout in `boards/common/blehound_partitions.dtsi`). All outputs are collected with fixed
+names in `build_dongle/blehound/`: `blehound_mcu_boot.*`, `blehound_loader.*`, `blehound_app.*`
+(bin/hex/elf/map each), `blehound_ota.bin` / `blehound_ota.zip` (DFU upload) and
+`blehound_merged.hex` (whole chip, what J-Link programs). After that, updates need no J-Link:
+
+```bash
+BLEhound/tools/dfu.sh /dev/cu.usbmodemXXXX      # USB DFU of one board (default: build_dongle/blehound/blehound_ota.bin)
+BLEhound/tools/dfu.sh all                       # every board in turn
+BLEhound/tools/verify_flash.sh <J-Link SN>      # byte-compare all three regions on the chip
+```
+
+`dfu.sh` sends `HOST_CMD_ENTER_DFU` on the capture port, the board re-enumerates as
+"BLEhound Loader" (PID 0x5210) and `nrfutil mcu-manager` uploads the image over SMP.
+
 ## Configuration (Kconfig)
 
 | Option | Meaning |

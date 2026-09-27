@@ -24,8 +24,13 @@ echo "== Target: SN=$SN"
 
 # Auto-select the hex: real-board output first (build_dongle/); then the multi-image (with bootloader) merged.hex;
 # the single-image sysbuild output is in build/firmware/zephyr/; the non-sysbuild legacy layout is in build/zephyr/.
+# With MCUboot the merged_*.hex (MCUboot + firmware loader + signed app) must be flashed: the app's own zephyr.hex
+# is linked at 0x23000 and cannot run without the bootloader. Erase the whole chip first: the app moved from 0x0 to
+# 0x23000, MCUboot would treat old-firmware leftovers as garbage, but a clean chip is safer.
 if [ -n "${1:-}" ]; then
     HEX="$1"
+elif [ -f "$PROJ_DIR/build_dongle/blehound/blehound_merged.hex" ]; then
+    HEX="$PROJ_DIR/build_dongle/blehound/blehound_merged.hex"
 elif [ -f "$PROJ_DIR/build_dongle/firmware/zephyr/zephyr.hex" ]; then
     HEX="$PROJ_DIR/build_dongle/firmware/zephyr/zephyr.hex"
 elif [ -f "$PROJ_DIR/build/merged.hex" ]; then
@@ -44,7 +49,7 @@ if [ "${RECOVER:-0}" = "1" ]; then
 fi
 
 echo "== program $HEX"
-"$NRFUTIL_BIN" device program --firmware "$HEX" --serial-number "$SN"
+"$NRFUTIL_BIN" device program --firmware "$HEX" --serial-number "$SN" --options chip_erase_mode=ERASE_ALL
 echo "== reset"
 "$NRFUTIL_BIN" device reset --serial-number "$SN"
 echo "== done"

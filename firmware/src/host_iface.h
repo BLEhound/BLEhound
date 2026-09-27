@@ -84,6 +84,11 @@
                                        *   PDU (2-byte header + payload, MIC stripped). The firmware treats it as a plaintext control
                                        *   packet received on that connection, so channel-map / connection-parameter / PHY updates
                                        *   switch at the instant as usual and the link is no longer lost after encryption. */
+#define HOST_CMD_ENTER_DFU    0x8B   /**< no args, enter firmware update mode: the firmware writes the boot mode into the
+                                       *   retained register and resets, MCUboot starts the firmware loader (re-enumerates on
+                                       *   USB as "BLEhound Loader", PID 0x5210, SMP/mcumgr protocol). This serial port goes
+                                       *   away, no reply is sent; after the loader has written the new image and reset, the
+                                       *   app is back. Firmware built without DFU ignores the command. */
 #define HOST_CMD_SET_IRK      0x89   /**< arg: 16-byte IRK in **over-the-air / SMP Identity Information order (LSO first)**,
                                        *   matching the device log line "IRK wire/LSO-first"; all zero = clear. With an IRK set,
                                        *   the firmware uses ah() to recognise the target's new RPAs and makes them the current

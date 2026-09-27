@@ -1,0 +1,6 @@
+/* MCUboot lives in boot_partition; the boot mode node (gpregret1/boot_mode0) comes from the shared board dtsi. */
+/ {
+	chosen {
+		zephyr,code-partition = &boot_partition;
+	};
+};

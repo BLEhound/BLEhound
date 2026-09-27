@@ -1,0 +1,59 @@
+/*
+ * BLEhound board definition, derived from the Zephyr nRF54LM20 DK board
+ * (boards/nordic/nrf54lm20dk, Copyright (c) 2025 Nordic Semiconductor ASA).
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * RRAM partition layout (DFU design: MCUboot "firmware loader" single-slot mode, fixed 2026-09-27).
+ * All three images take their addresses from this table. **Once MCUboot has been programmed into
+ * production boards this table must never change** (an older bootloader would no longer find the app).
+ *
+ *   mcuboot   0x000000   24 KB  bootloader: verifies image-0 and jumps to it; jumps to image-1 when the
+ *                               boot mode asks for the firmware loader
+ *   image-1   0x006000  116 KB  firmware loader (SMP/mcumgr over USB CDC ACM, only ever writes image-0)
+ *   image-0   0x023000 1880 KB  sniffer application (signed image, ~105 KB today)
+ *   storage   0x1F9000   16 KB  reserved for future settings storage, unused for now
+ *
+ * Same layout as Nordic's official nRF54LM20 dongle (which has no storage partition and a 1896 KB app
+ * slot); the whole 2036 KB is used, the last 96 KB are nominally reserved for the FLPR coprocessor,
+ * which this board does not use.
+ */
+
+/delete-node/ &boot_partition;
+/delete-node/ &slot0_partition;
+/delete-node/ &slot1_partition;
+/delete-node/ &storage_partition;
+
+&cpuapp_rram {
+	reg = <0x0 DT_SIZE_K(2036)>;
+	ranges = <0x0 0x0 DT_SIZE_K(2036)>;
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			compatible = "zephyr,mapped-partition";
+			label = "mcuboot";
+			reg = <0x0 DT_SIZE_K(24)>;
+		};
+		slot1_partition: partition@6000 {
+			compatible = "zephyr,mapped-partition";
+			label = "image-1";
+			reg = <0x6000 DT_SIZE_K(116)>;
+		};
+		slot0_partition: partition@23000 {
+			compatible = "zephyr,mapped-partition";
+			label = "image-0";
+			reg = <0x23000 DT_SIZE_K(1880)>;
+		};
+		storage_partition: partition@1f9000 {
+			compatible = "zephyr,mapped-partition";
+			label = "storage";
+			reg = <0x1f9000 DT_SIZE_K(16)>;
+		};
+	};
+};

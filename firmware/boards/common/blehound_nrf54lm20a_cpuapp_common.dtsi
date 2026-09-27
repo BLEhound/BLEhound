@@ -23,6 +23,8 @@
 		zephyr,flash-controller = &rram_controller;
 		zephyr,flash = &cpuapp_rram;
 		zephyr,usb-bc12 = &usbhs_bc12;
+		/* DFU: boot mode byte the app sets before rebooting into the firmware loader (see boot_mode0 below). */
+		zephyr,boot-mode = &boot_mode0;
 	};
 
 	/* ACT LED: P1.05 -> R -> green LED -> GND, lit on high. */
@@ -219,6 +221,20 @@
  * temperature is stable (CLOCK_CONTROL_NRF_USES_TEMP_SENSOR). */
 temp_sensor: &temp {
 	status = "okay";
+};
+
+/*
+ * DFU boot mode: one byte in the GPREGRET1 retained register. The app writes BOOT_MODE_TYPE_BOOTLOADER here
+ * (HOST_CMD_ENTER_DFU) and resets; MCUboot reads it and boots the firmware loader (image-1) instead of the app.
+ * Shared by all three images (MCUboot, loader, app) through this board dtsi.
+ */
+&gpregret1 {
+	status = "okay";
+	boot_mode0: boot_mode@0 {
+		compatible = "zephyr,retention";
+		status = "okay";
+		reg = <0x0 0x1>;
+	};
 };
 
 /* USB-C data port (CDC ACM to the host); the CDC ACM function itself is added by the application (app.overlay). */
