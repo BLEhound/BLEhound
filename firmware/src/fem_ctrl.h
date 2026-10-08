@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * nRF21540 FEM control -- pure GPIO mode (no SPI). One FEM per SoC (hardware README "nRF21540 FEM").
  *

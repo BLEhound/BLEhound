@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Host interface —— sends captured packets to the host (Wireshark extcap) over USB CDC ACM.
  *

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
 """Pure-logic module for three-dongle aggregation (no I/O, easy to unit-test on the host).
 
 Responsibilities (design doc/2026-08-13-… §6):

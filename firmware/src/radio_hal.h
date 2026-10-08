@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Radio HAL -- the radio abstraction layer used for sniffing (the porting contract)
  *

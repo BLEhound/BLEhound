@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Inter-board transmit queue — a single-producer single-consumer ring from the radio receive interrupt (producer) to the system work-queue thread (consumer).
  *

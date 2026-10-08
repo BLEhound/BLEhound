@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /* COBS encode/decode -- see the notes in cobs.h for the implementation */
 
 #include "cobs.h"

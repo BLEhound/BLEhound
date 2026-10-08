@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Host interface implementation —— see host_iface.h for the frame format.
  *

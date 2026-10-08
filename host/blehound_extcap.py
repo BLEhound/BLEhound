@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
 """Wireshark extcap plugin — feeds the BLE packets captured by the BLEhound firmware into Wireshark.
 
 How it works: on startup Wireshark repeatedly calls this script with different

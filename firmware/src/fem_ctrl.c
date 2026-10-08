@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * nRF21540 FEM pure-GPIO control implementation -- see fem_ctrl.h (includes the P0.09 rules, must read before changing).
  */
@@ -11,7 +12,7 @@
 LOG_MODULE_REGISTER(fem_ctrl, LOG_LEVEL_INF);
 
 /* nRF21540 PS v1.0 Table 6 settling times (µs), matching the defaults of the zephyr nordic,nrf21540-fem binding.
- * TX is set to 26 = 11 (PG→TX) + margin for the SoC RF power ramp-up. ⚠️ On-board verification: may be tightened per measurement. */
+ * TX is set to 26 = 11 (PG→TX) + margin for the SoC RF power ramp-up. */
 #define FEM_PDN_SETTLE_US 18 /* PD → PG */
 #define FEM_RX_SETTLE_US  11 /* PG → RX */
 #define FEM_TX_SETTLE_US  26 /* PG → TX */

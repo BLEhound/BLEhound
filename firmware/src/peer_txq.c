@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Inter-board transmit queue implementation — see peer_txq.h.
  */

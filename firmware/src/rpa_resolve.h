@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Resolvable private address (RPA) resolution -- pure functions + a small cache, no hardware dependency,
  * called from main's RX interrupt / capture thread and unit-tested on the host (test/host/test_rpa.c in

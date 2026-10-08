@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Board role identification — all three boards run identical firmware and read 2 strap GPIOs at boot to self-identify their role.
  *

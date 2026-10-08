@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * AES-128 single-block encryption, a direct transcription of the four FIPS-197 steps
  * (SubBytes/ShiftRows/MixColumns/AddRoundKey). Round keys are derived on the fly instead of

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
 """Passive crack of Legacy pairing (crackle-style) — phase B.
 
 Authorized use only: run this only against devices you own or are explicitly

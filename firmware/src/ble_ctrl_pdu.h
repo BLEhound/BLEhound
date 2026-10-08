@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Pure parsing of the LL control PDUs added in BLE 6.x (no hardware dependency)
  *

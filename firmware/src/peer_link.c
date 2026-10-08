@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Inter-board link implementation -- see peer_link.h. Downstream master port: bit-banged SPI on GPIOs;
  * upstream slave port: nrfx_spis; REQ on GPIO.

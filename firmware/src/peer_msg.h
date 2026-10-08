@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Inter-board message serialisation -- the wire format the three boards use to report hits / hand off
  * connections over the pairwise SPI links (pure logic, no hardware dependency).

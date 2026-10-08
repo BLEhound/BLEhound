@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * AES-128 single-block encryption (one ECB block) -- the primitive under the BLE security functions ah()/e().
  *

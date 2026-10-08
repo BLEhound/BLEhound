@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Connection Follower — the core capability of the sniffer.
  *

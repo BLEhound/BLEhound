@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * BLE channel selection algorithm implementation -- see ble_csa.h for the algorithm description.
  *

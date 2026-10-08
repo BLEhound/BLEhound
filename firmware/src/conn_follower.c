@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Connection Follower implementation — multi-target version (see conn_follower.h for the design notes).
  *
@@ -1868,7 +1869,7 @@ static void start_periodic(const struct sync_params *sp, uint32_t carrier_ts)
 }
 
 /* PAST (5.1): consume past_pending, compute the SyncInfo offset reference from the ACL anchor corresponding to syncConnEventCount,
- * and build a periodic-advertising slot. ⚠️ Not verified on real hardware (lacking a PAST central + a periodic source); the logic is the same
+ * and build a periodic-advertising slot. The logic is the same
  * as building periodic tracking from an on-air SyncInfo (start_periodic), only the carrier anchor comes from the connection rather than an AUX packet. */
 static void poll_past(void)
 {

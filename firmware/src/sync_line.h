@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * SYNC line HAL -- the open-drain edge shared by the three boards that establishes a common cross-board
  * time base (design 5.2 / 3.3).

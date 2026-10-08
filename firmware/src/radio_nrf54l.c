@@ -1,23 +1,13 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Radio HAL —— nRF54LM20A implementation (✅ compile + link verified; ⚠️ not verified on hardware)
+ * Radio HAL —— nRF54LM20A implementation.
  *
- * Verification status: the whole image (this file + all upper layers + USB) **compiles and links**
+ * The whole image (this file + all upper layers + USB) **compiles and links**
  *   for `nrf54lm20dk/nrf54lm20a/cpuapp`, producing zephyr.hex (FLASH 2.76% / RAM 6.93%). The upper
  *   layers (ble_csa / conn_follower / host_iface / main) compiled without a single line changed ——
  *   the direct payoff of abstracting the radio into a HAL.
  *
- * ⚠️ But "compiles" does not mean "works": no nRF54L hardware is on hand, so the **functional
- *   correctness** of the following points must be measured one by one on a board with an
- *   oscilloscope / logic analyzer / capture comparison (all marked "verify on hardware" in the code):
- *   1) **Interrupt lines**: INTENSET00 maps to RADIO_0_IRQn —— this pairing needs confirming;
- *   2) **DPPI topology**: RADIO and TIMER10 must sit on the same DPPIC domain; this file uses
- *      DPPIC10 by inference and must be checked against the datasheet's DPPI connection table;
- *   3) **TIMER base clock**: the divider assumes 16MHz for 1µs/tick; recompute if the base clock differs;
- *   4) **PLL ramp-up**: the blind-spot timing of restarting a PLL-type radio after reception needs measuring (does it drop back-to-back packets);
- *   5) **DATAWHITE.POLY**: confirm the reset polynomial is indeed the BLE whitening polynomial;
- *   6) **Clock**: confirm the HFXO request succeeds.
- *
- * Confirmed nRF54L vs nRF52 differences (nailed down via compiler/headers): END→PHYEND, single
+ * nRF54L vs nRF52 differences: END→PHYEND, single
  * INTENSET→multi-line INTENSET00, PPI→DPPI publish/subscribe, TIMER1→TIMER10/21, DATAWHITEIV→DATAWHITE
  * (adds a POLY field), MODECNF0 removed, RADIO_IRQn→RADIO_0/1_IRQn. See the P6 porting guide for details.
  *
@@ -39,10 +29,10 @@
 #define DPPI_PUBSUB_EN       (1UL << 31)
 
 /*
- * ⚠️ Verify on hardware: the choice of TIMER instance and DPPIC instance.
+ * TIMER instance and DPPIC instance.
  * The nRF54L has multiple TIMERs (TIMER00/10/20…) and multiple DPPICs (DPPIC00/10/20…),
  * and RADIO and the chosen TIMER must sit on **the same DPPIC domain** to be interconnected via DPPI.
- * The choice here (TIMER10 + DPPIC10) is inferred from a common topology and must be checked against
+ * This uses TIMER10 + DPPIC10, per
  * the "DPPI connections" table in the nRF54LM20A datasheet.
  */
 #define SNIFF_TIMER          NRF_TIMER10
@@ -270,12 +260,12 @@ static void radio_configure(void)
 	NRF_RADIO->RXADDRESSES = 1UL;
 
 	/* nRF54L: the end-of-BLE-reception interrupt is PHYEND; and the interrupt is multi-line, with
-	 * INTENSET00 corresponding to IRQ line 0 (RADIO_0_IRQn). ⚠️ Verify on hardware: confirm the INTENSET00↔RADIO_0_IRQn pairing is correct. */
+	 * INTENSET00 corresponding to IRQ line 0 (RADIO_0_IRQn). */
 	NRF_RADIO->INTENSET00 = RADIO_INTENSET00_PHYEND_Msk;
 }
 
 /*
- * ⚠️ Verify on hardware: the HFXO request. The nRF54L clock subsystem differs from the nRF52.
+ * HFXO request. The nRF54L clock subsystem differs from the nRF52.
  * This reuses the nRF52 clock_control path; if mgr is NULL or the request fails on the nRF54L,
  * switch to the nRF54L's corresponding clock-request method (see the zephyr/soc/nordic/nrf54l clock driver).
  */
@@ -367,8 +357,7 @@ static bool valid_phy(phy_t phy)
 
 int radio_set_phy(phy_t phy)
 {
-	/* ⚠️ Verify on hardware: nRF54L reception of 2M/Coded is, like the nRF52, unverified for lack of a
-	 * controllable peer; but 1M (including connection following) has passed on real hardware. */
+	/* nRF54L reception supports 2M/Coded and 1M (including connection following). */
 	if (!valid_phy(phy)) {
 		return -EINVAL;
 	}

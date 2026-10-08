@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Advertising PDU target filter -- pure function, no hardware dependency, called from
  * main's packet-RX interrupt and unit-tested on the host.

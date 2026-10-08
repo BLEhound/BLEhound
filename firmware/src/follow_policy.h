@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Connection follow policy -- pure functions with no hardware dependency, called by conn_follower
  * and unit-tested on the host (test/host/test_follow_policy.c in the internal repo).

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * BLE Channel Selection Algorithm #1 / #2
  *

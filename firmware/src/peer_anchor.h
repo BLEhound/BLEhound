@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Anchor conversion for inter-board handoffs -- pure functions, no hardware dependency
  * (unit-tested in test/host/test_peer_anchor.c).

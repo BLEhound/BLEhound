@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Inter-board link HAL -- pairwise point-to-point SPI + REQ (design 4.2 / 5.3, P3 coordination transport).
  *

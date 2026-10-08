@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Tri-board coordination layer — the platform-independent logic that ties P1/P2/P3 together (design §5).
  *

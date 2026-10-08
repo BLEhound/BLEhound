@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Tri-board coordination layer implementation -- see tri_coord.h. Platform independent; only talks to
  * sync_line / peer_link / peer_msg / conn_follower.

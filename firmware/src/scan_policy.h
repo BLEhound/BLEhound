@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Scan channel policy -- pure function, no hardware dependency, called from conn_follower and
  * unit-tested on the host.

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Inter-board message serialization implementation — see peer_msg.h. Pure C, no Zephyr/hardware dependency (unit-testable on host).
  */

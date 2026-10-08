@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * LED indication policy -- pure function, no hardware dependency, called from main and unit-tested
  * on the host.

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
 """Cryptographic primitives used by BLE pairing / encryption.
 
 Authorized use only: these primitives back the pairing-crack / decryption tooling;
