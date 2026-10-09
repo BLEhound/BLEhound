@@ -59,8 +59,12 @@ tools/build.sh                          # nRF54LM20A dongle → build/
 ## Flash
 
 ```bash
+# Recommended on the nRF54LM20A — pure J-Link (erase + program + reset; auto-unlocks APPROTECT on connect):
+tools/flash_jlink.sh
+SN=<jlink-serial> tools/flash_jlink.sh   # pick one when several debuggers are attached
+
+# Alternatives via nrfutil — note it may not recognise early nRF54LM20A samples ("Unknown part 0x33"):
 west flash
-# or, via nrfutil + J-Link (handles APPROTECT recovery):
 tools/flash.sh                 # auto-detects the J-Link and hex
 RECOVER=1 tools/flash.sh       # recover (unlock APPROTECT) first
 ```

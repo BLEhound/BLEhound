@@ -53,10 +53,14 @@ tools/build.sh                          # nRF54LM20A dongle → build/
 ## 烧录
 
 ```bash
+# nRF54LM20A 推荐：纯 J-Link（擦除+烧录+复位；connect 时自动解 APPROTECT）：
+tools/flash_jlink.sh
+SN=<jlink序列号> tools/flash_jlink.sh    # 多块调试器时指定一块
+
+# 备选（走 nrfutil）—— 注意 nrfutil 可能不认早期 nRF54LM20A 样片（"Unknown part 0x33"）：
 west flash
-# or, via nrfutil + J-Link (handles APPROTECT recovery):
-tools/flash.sh                 # auto-detects the J-Link and hex
-RECOVER=1 tools/flash.sh       # recover (unlock APPROTECT) first
+tools/flash.sh                 # 自动探测 J-Link 和 hex
+RECOVER=1 tools/flash.sh       # 先 recover（解 APPROTECT）再烧
 ```
 
 每块板烧录的都是同一份固件；三板方案下，把三块都烧上，并连接你正在编程的那块板的
