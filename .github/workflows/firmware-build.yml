@@ -11,6 +11,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container: ghcr.io/nrfconnect/sdk-nrf-toolchain:v3.4.0
+    defaults:
+      run:
+        # The toolchain container exports its env (west, cmake, SDK on PATH) only in a
+        # LOGIN bash session; GitHub's default sh leaves them unset -> "west: not found".
+        shell: bash -leo pipefail {0}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
