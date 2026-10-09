@@ -245,6 +245,14 @@ static void radio_configure(void)
 {
 	radio_apply_phy(PHY_1M);   /* default 1M; MODE/PCNF0 are set by radio_apply_phy */
 
+	/* Enable fast ramp-up. On the nRF54L this is RADIO.TIMING.RU (it was MODECNF0.RU on the
+	 * nRF52); without it the radio uses the ~140µs Legacy ramp. Inside an event the slave
+	 * direction of an asymmetric link (Coded->1M) has only the 150µs T_IFS to turn
+	 * "PHYEND -> change MODE -> RXEN -> ramp" around, and the Legacy ramp eats the whole budget,
+	 * dropping every slave 1M packet (measured: 0 captures on the slave side of an asymmetric
+	 * link). Fast (~40µs) leaves enough time. Symmetric links benefit too. */
+	NRF_RADIO->TIMING = (RADIO_TIMING_RU_Fast << RADIO_TIMING_RU_Pos);
+
 	NRF_RADIO->PCNF1 =
 		((uint32_t)RADIO_PAYLOAD_MAX_LEN << RADIO_PCNF1_MAXLEN_Pos) |
 		(0UL << RADIO_PCNF1_STATLEN_Pos) |

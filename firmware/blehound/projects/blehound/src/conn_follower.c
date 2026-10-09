@@ -1488,9 +1488,15 @@ static bool aux_budget_take(uint32_t now)
 static uint32_t open_guard_us(const struct conn_slot *s)
 {
 	if (!s->bis || !s->bis_locked) {
-		uint32_t guard = OPEN_GUARD_BASE_US + s->interval_us / 1000;
+		/* The lead time must cover the master-direction PHY's "preamble + AA" airtime: next_mts marks the moment the AA finishes
+		 * (EVENTS_ADDRESS), but the window has to bring the radio up before the packet's very first preamble bit (plus ramp). Coded's
+		 * preamble+AA runs up to 376µs, far above 1M's 40µs; leaving it out of the lead time means that once the master direction
+		 * switches to Coded the window opens later than the long preamble every event, so the radio misses the preamble and never
+		 * syncs, dropping nearly every packet and losing the anchor (measured: an asymmetric C->P Coded / P->C 1M link loses lock). */
+		uint32_t guard = OPEN_GUARD_BASE_US + preamble_aa_us(s->phy) +
+				 s->interval_us / 1000;
 
-		/* Short connection interval (6.2): when the interval drops to a few hundred µs, a fixed 300µs lead time would eat most of an
+		/* Short connection interval (6.2): when the interval drops to a few hundred µs, a fixed lead time would eat most of an
 		 * event. The lead time takes at most ~1/3 of the interval, just enough to leave room for radio readiness (~56µs), with the rest
 		 * left for the RX window itself. A locked ISO slot follows the separate schedule constraint below and isn't subject to this. */
 		if (s->interval_us > 0u) {
