@@ -23,8 +23,15 @@ west zephyr-export
 
 > **Windows:** 用 **nRF Connect for Desktop → Toolchain Manager** 装工具链(选 NCS v3.4.0),在它自带的命令行里跑上面这些 `west` 命令——命令在 macOS / Linux / Windows 上完全一致。
 
-你还需要一个与 NCS v3.4.0 兼容的 Zephyr SDK（1.0.1）。若未被自动检测到，请用
-`ZEPHYR_SDK_INSTALL_DIR` 指向它。
+你还需要一个 **Zephyr SDK 1.0.1**（配 NCS v3.4.0）。nRF Connect Toolchain Manager 会自动
+注册它；**手动解压的 SDK 必须先注册一次**，用 CMake：
+
+```bash
+<sdk目录>/setup.sh -c      # 或: cmake -P <sdk目录>/cmake/zephyr_sdk_export.cmake
+```
+
+或导出 `ZEPHYR_SDK_INSTALL_DIR=/path/to/zephyr-sdk-1.0.1`。否则构建会报
+*"Could not find a package configuration file provided by Zephyr-sdk"*。
 
 > **已经有 NCS v3.4.0 工作区?** 不必重新下载 —— 跳过 `west init` / `west update`,直接把构建脚本指向现成的 NCS:`NCS_TOPDIR=/path/to/ncs tools/build.sh`。
 

@@ -26,8 +26,16 @@ west zephyr-export
 > (install NCS v3.4.0) and run these `west` commands in its bundled command prompt —
 > they are identical across macOS, Linux, and Windows.
 
-You also need a Zephyr SDK compatible with NCS v3.4.0 (1.0.1). Point to it with
-`ZEPHYR_SDK_INSTALL_DIR` if it is not auto-detected.
+You also need a **Zephyr SDK 1.0.1** (matches NCS v3.4.0). The nRF Connect Toolchain
+Manager registers it for you; a **manually-unpacked SDK must be registered once**, with
+CMake:
+
+```bash
+<sdk-dir>/setup.sh -c      # or: cmake -P <sdk-dir>/cmake/zephyr_sdk_export.cmake
+```
+
+or by exporting `ZEPHYR_SDK_INSTALL_DIR=/path/to/zephyr-sdk-1.0.1`. Without this the
+build fails with *"Could not find a package configuration file provided by Zephyr-sdk"*.
 
 > **Already have an NCS v3.4.0 workspace?** No need to re-download it — skip `west init`
 > / `west update` and point the build wrapper at your existing NCS:

@@ -111,6 +111,8 @@ Most mainstream link-layer features from BLE 4.0 to 6.x are covered, with an hon
 
 ## Quick start
 
+> **Prerequisites:** the nRF Connect SDK **v3.4.0** toolchain (`west`) and **Zephyr SDK 1.0.1**, both on PATH — on Windows install them via nRF Connect for Desktop → Toolchain Manager. A manually-unpacked SDK must be registered once; see [firmware/README.md](firmware/README.md).
+
 ```bash
 # 1) Firmware — self-contained west workspace lives in firmware/
 git clone https://github.com/BLEhound/BLEhound

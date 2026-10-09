@@ -107,6 +107,8 @@ Gerber、BOM、3D 打印外壳）。
 
 ## 快速开始
 
+> **前置:** nRF Connect SDK **v3.4.0** 工具链(`west`)和 **Zephyr SDK 1.0.1**,都要在 PATH 上——Windows 用 nRF Connect for Desktop → Toolchain Manager 安装。手动解压的 SDK 需要注册一次,见 [firmware/README.md](firmware/README.md)。
+
 ```bash
 # 1) 固件 —— 自包含 west 工作区在 firmware/ 下
 git clone https://github.com/BLEhound/BLEhound
