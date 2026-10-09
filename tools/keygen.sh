@@ -7,8 +7,8 @@
 set -euo pipefail
 PROJ_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 KEY="${BLEHOUND_SIGNING_KEY:-$HOME/.blehound/keys/blehound_ed25519.pem}"
-PUB="$PROJ_DIR/firmware/keys/blehound_ed25519.pub.pem"
-NCS_TOPDIR="${NCS_TOPDIR:-$(cd "$PROJ_DIR/.." && pwd)}"
+PUB="$PROJ_DIR/firmware/blehound/projects/blehound/keys/blehound_ed25519.pub.pem"
+NCS_TOPDIR="${NCS_TOPDIR:-$PROJ_DIR/firmware}"
 IMGTOOL="$NCS_TOPDIR/bootloader/mcuboot/scripts/imgtool.py"
 PYTHON="${PYTHON:-$HOME/ENV_TOOL/Python312/bin/python3}"
 [ -f "$IMGTOOL" ] || { echo "imgtool not found: $IMGTOOL (set NCS_TOPDIR)"; exit 1; }

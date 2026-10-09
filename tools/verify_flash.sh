@@ -4,15 +4,15 @@
 # first ~1s of RTT lines after reset are often lost, so you can't judge the version from the boot log. After flashing, always verify with this script.
 #
 # Three-image layout with MCUboot (firmware/boards/common/blehound_partitions.dtsi), compared region by region:
-#   0x00000 MCUboot              build_dongle/blehound/blehound_mcu_boot.bin
-#   0x06000 firmware loader      build_dongle/blehound/blehound_loader.bin
-#   0x23000 app (signed image)   build_dongle/blehound/blehound_app.bin
-# Usage: tools/verify_flash.sh <J-Link SN> [build dir, defaults to build_dongle]
+#   0x00000 MCUboot              build/blehound/blehound_mcu_boot.bin
+#   0x06000 firmware loader      build/blehound/blehound_loader.bin
+#   0x23000 app (signed image)   build/blehound/blehound_app.bin
+# Usage: tools/verify_flash.sh <J-Link SN> [build dir, defaults to build]
 #        legacy single-image layout: tools/verify_flash.sh <SN> path/to/zephyr.bin (a .bin file = compare 0x0 only)
 set -uo pipefail
 SN="${1:?Usage: tools/verify_flash.sh <J-Link SN> [build dir|zephyr.bin]}"
 PROJ_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-TARGET="${2:-$PROJ_DIR/build_dongle}"
+TARGET="${2:-$PROJ_DIR/build}"
 JLINK_DIR="${JLINK_DIR:-/Applications/SEGGER/JLink_V962}"
 DEVICE="${DEVICE:-nRF54LM20A_M33}"
 

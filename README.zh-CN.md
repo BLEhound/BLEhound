@@ -103,21 +103,21 @@ Gerber、BOM、3D 打印外壳）。
 | [`host/`](host/) | Wireshark `extcap` 插件 + 多信道聚合器（Python）。用法：[host/README.zh-CN.md](host/README.zh-CN.md) |
 | [`hardware/`](hardware/) | 开放硬件。**V1** = 已投产板(JLCEDA 源 + Gerber/BOM/外壳);**V2** = 在制。详情见 [hardware/README.zh-CN.md](hardware/README.zh-CN.md) —— 注意 V1 已知问题(单片可用;三机需返工)。 |
 | [`tools/`](tools/) | 构建 / 烧录 / RTT / extcap 安装辅助脚本 |
-| [`west.yml`](west.yml) | west manifest（从 Nordic 官方 GitHub 拉取 NCS） |
+| [`firmware/blehound/west.yml`](firmware/blehound/west.yml) | west manifest（自包含；从 Nordic 官方 GitHub 拉取 NCS 到 firmware/ 下） |
 
 ## 快速开始
 
 ```bash
-# 1) 固件（在一个空的工作区目录中）
+# 1) 固件 —— 自包含 west 工作区在 firmware/ 下
 git clone https://github.com/BLEhound/BLEhound
-west init -l BLEhound && west update && west zephyr-export
-west build -b blehound_v1/nrf54lm20a/cpuapp -s BLEhound/firmware -- -DBOARD_ROOT=.
-# revised board (V2): -b blehound_v2/nrf54lm20a/cpuapp
-west flash            # or: BLEhound/tools/flash.sh
+cd BLEhound
+( cd firmware && west init -l blehound && west update && west zephyr-export )
+tools/build.sh                        # nRF54LM20A → build/ ; V2=1 为改版板
+tools/flash_jlink.sh                  # 经 J-Link 烧录
 
 # 2) 主机插件
-BLEhound/tools/install_extcap.sh      # copies the extcap into Wireshark
-# then open Wireshark → interface "BLEhound Sniffer"
+tools/install_extcap.sh               # 把 extcap 装进 Wireshark
+# 然后打开 Wireshark → 选接口 "BLEhound Sniffer"
 ```
 
 > **Windows** 同样支持 —— host 工具跨平台。Windows 上 Wireshark 需要随附的 `.bat` 包装器,见 [host/README.zh-CN.md](host/README.zh-CN.md#windows)。

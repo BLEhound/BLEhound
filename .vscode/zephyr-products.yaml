@@ -1,0 +1,22 @@
+# Product registry — add a board here and zephyr-build.py picks it up, no code change.
+#
+# Fields:
+#   board: the `west build -b` target
+#   app:   application dir, relative to the west workspace root (firmware/)
+#   sdk:   Zephyr SDK version (pairs with NCS v3.4.0)
+#   build: build output dir, relative to the repo root
+#
+# Usage: python .vscode/zephyr-build.py <product> [--pristine|--increment]
+#   product may be the full name (blehound_v1) or the short form (v1).
+
+blehound_v1:
+  board: blehound_v1/nrf54lm20a/cpuapp
+  app: blehound/projects/blehound
+  sdk: "1.0.1"
+  build: build
+
+blehound_v2:
+  board: blehound_v2/nrf54lm20a/cpuapp
+  app: blehound/projects/blehound
+  sdk: "1.0.1"
+  build: build_v2

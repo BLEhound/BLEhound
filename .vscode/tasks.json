@@ -1,0 +1,84 @@
+{
+    // Naming: [BLEhound][NN] <category>    NN: 0x build / 1x flash / 3x update / 4x log
+    //
+    // All tasks run python / west (not bash): on Windows VSCode's `bash -c` is often
+    // the WSL bash, which can't reach the J-Link USB. python -> JLink.exe works cross-platform.
+    // The command-line equivalents live in tools/*.sh.
+    //
+    // Self-contained west workspace: workspace root = ${workspaceFolder}/firmware;
+    // app = firmware/blehound/projects/blehound. Flash/log tasks need a J-Link attached;
+    // with several boards connected pass --sn <serial> on the command line.
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "[BLEhound][01] Build · V1 (nRF54LM20A)",
+            "type": "shell", "command": "python",
+            "args": ["${workspaceFolder}/.vscode/zephyr-build.py", "v1"],
+            "group": {"kind": "build", "isDefault": true},
+            "problemMatcher": []
+        },
+        {
+            "label": "[BLEhound][02] Build · V1 pristine (full rebuild)",
+            "type": "shell", "command": "python",
+            "args": ["${workspaceFolder}/.vscode/zephyr-build.py", "v1", "--pristine"],
+            "problemMatcher": []
+        },
+        {
+            "label": "[BLEhound][03] Build · V1 increment",
+            "type": "shell", "command": "python",
+            "args": ["${workspaceFolder}/.vscode/zephyr-build.py", "v1", "--increment"],
+            "problemMatcher": []
+        },
+        {
+            "label": "[BLEhound][04] Build · V2 (revised board)",
+            "type": "shell", "command": "python",
+            "args": ["${workspaceFolder}/.vscode/zephyr-build.py", "v2"],
+            "problemMatcher": []
+        },
+        {
+            "label": "[BLEhound][11] Flash · whole-chip (J-Link)",
+            "type": "shell", "command": "python",
+            "args": ["${workspaceFolder}/.vscode/flash.py", "v1"],
+            "problemMatcher": []
+        },
+        {
+            "label": "[BLEhound][12] Flash · recover (unlock APPROTECT) then flash",
+            "type": "shell", "command": "python",
+            "args": ["${workspaceFolder}/.vscode/flash.py", "v1", "--recover"],
+            "problemMatcher": []
+        },
+        {
+            "label": "[BLEhound][13] Recover · mass-erase / unlock only",
+            "type": "shell", "command": "python",
+            "args": ["${workspaceFolder}/.vscode/flash.py", "v1", "--recover-only"],
+            "problemMatcher": []
+        },
+        {
+            "label": "[BLEhound][14] Build + Flash",
+            "dependsOn": [
+                "[BLEhound][01] Build · V1 (nRF54LM20A)",
+                "[BLEhound][11] Flash · whole-chip (J-Link)"
+            ],
+            "dependsOrder": "sequence",
+            "problemMatcher": []
+        },
+        {
+            "label": "[BLEhound][31] Update · west update",
+            "type": "shell", "command": "west", "args": ["update"],
+            "options": {"cwd": "${workspaceFolder}/firmware"},
+            "problemMatcher": []
+        },
+        {
+            "label": "[BLEhound][41] Log · RTT (reset, from boot)",
+            "type": "shell", "command": "python",
+            "args": ["${workspaceFolder}/.vscode/rtt.py", "--reset"],
+            "isBackground": true, "problemMatcher": []
+        },
+        {
+            "label": "[BLEhound][42] Log · RTT",
+            "type": "shell", "command": "python",
+            "args": ["${workspaceFolder}/.vscode/rtt.py"],
+            "isBackground": true, "problemMatcher": []
+        }
+    ]
+}

@@ -1,0 +1,5 @@
+# Register blehound/ as a Zephyr module with board_root pointing here, so Zephyr
+# auto-discovers boards/ (blehound_v1 / blehound_v2) — no -DBOARD_ROOT at build time.
+build:
+  settings:
+    board_root: .

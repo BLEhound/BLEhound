@@ -1,0 +1,82 @@
+# BLEhound — self-contained west manifest.
+#
+# Workspace layout (self-contained; all of NCS lives under firmware/):
+#   firmware/              <- west workspace top (west topdir)
+#   firmware/blehound/     <- this manifest repo + Zephyr module + app + boards
+#   firmware/nrf,zephyr,.. <- pulled by `west update`, NOT committed
+#
+# Set up (run inside firmware/):
+#     west init -l blehound
+#     west update
+#     west zephyr-export
+#
+# Build (sysbuild: MCUboot + firmware-loader + application):
+#     west build -b blehound_v1/nrf54lm20a/cpuapp blehound/projects/blehound --sysbuild
+#   Board definitions are auto-discovered via blehound/zephyr/module.yml (board_root),
+#   so no -DBOARD_ROOT is needed.
+#
+# All dependencies come from the official Nordic GitHub repos (nrfconnect), pinned to
+# NCS v3.4.0 (pairs with Zephyr SDK 1.0.1). clone-depth=1 + a zephyr import allowlist
+# keep the download small.
+
+manifest:
+  version: "1.0"
+
+  self:
+    path: blehound
+
+  remotes:
+    - name: ncs
+      url-base: https://github.com/nrfconnect
+
+  projects:
+    - name: nrf
+      remote: ncs
+      repo-path: sdk-nrf
+      revision: v3.4.0
+      clone-depth: 1
+      # Do not recursively import nrf's children; deps are listed explicitly below.
+
+    - name: zephyr
+      remote: ncs
+      repo-path: sdk-zephyr
+      revision: ncs-v3.4.0
+      clone-depth: 1
+      import:
+        # Import only the modules this firmware actually needs.
+        name-allowlist:
+          - cmsis          # ARM CMSIS (Cortex-M core)
+          - cmsis_6
+          - hal_nordic     # nrfx / nRF54L SoC HAL (radio/timer/ppi/clock/usbhs...)
+          - segger         # SEGGER RTT (primary log channel)
+          - zcbor          # CBOR for mcumgr/SMP (USB firmware loader)
+          - littlefs       # filesystem (kept to match the baseline)
+
+    - name: nrfxlib
+      remote: ncs
+      repo-path: sdk-nrfxlib
+      revision: v3.4.0
+      clone-depth: 1
+
+    # MCUboot: first sysbuild image (verifies ed25519-pure, then jumps).
+    - name: mcuboot
+      remote: ncs
+      repo-path: sdk-mcuboot
+      revision: ncs-v3.4.0
+      path: bootloader/mcuboot
+      clone-depth: 1
+
+    # PSA crypto backend used by MCUboot signing/verification (ed25519-pure via oberon-psa).
+    - name: mbedtls
+      remote: ncs
+      repo-path: sdk-mbedtls
+      path: modules/crypto/mbedtls
+      revision: ncs-v3.4.0
+      clone-depth: 1
+
+    - name: oberon-psa-crypto
+      remote: ncs
+      repo-path: sdk-oberon-psa-crypto
+      path: modules/crypto/oberon-psa-crypto
+      revision: ncs-v3.4.0
+      clone-depth: 1

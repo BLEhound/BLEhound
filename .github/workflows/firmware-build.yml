@@ -2,9 +2,9 @@ name: firmware-build
 
 on:
   push:
-    paths: ["firmware/**", "west.yml", ".github/workflows/firmware-build.yml"]
+    paths: ["firmware/**", ".github/workflows/firmware-build.yml"]
   pull_request:
-    paths: ["firmware/**", "west.yml"]
+    paths: ["firmware/**"]
   workflow_dispatch:
 
 jobs:
@@ -12,19 +12,24 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/nrfconnect/sdk-nrf-toolchain:v3.4.0
     steps:
-      - name: Checkout into workspace
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           path: BLEhound
 
+      # Self-contained west workspace: root = BLEhound/firmware, manifest repo = blehound.
       - name: west init + update
+        working-directory: BLEhound/firmware
         run: |
-          west init -l BLEhound
+          west init -l blehound
           west update --narrow -o=--depth=1
           west zephyr-export
 
+      # Board defs auto-discovered via blehound/zephyr/module.yml (board_root); no -DBOARD_ROOT.
       - name: Build (BLEhound V1, first-batch board)
-        run: west build -b blehound_v1/nrf54lm20a/cpuapp -s BLEhound/firmware -d build_dongle -- -DBOARD_ROOT=.
+        working-directory: BLEhound/firmware
+        run: west build -b blehound_v1/nrf54lm20a/cpuapp blehound/projects/blehound -d build --sysbuild
 
       - name: Build (BLEhound V2, revised board)
-        run: west build -b blehound_v2/nrf54lm20a/cpuapp -s BLEhound/firmware -d build_dongle_v2 -- -DBOARD_ROOT=.
+        working-directory: BLEhound/firmware
+        run: west build -b blehound_v2/nrf54lm20a/cpuapp blehound/projects/blehound -d build_v2 --sysbuild

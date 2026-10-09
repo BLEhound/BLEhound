@@ -107,20 +107,20 @@ Most mainstream link-layer features from BLE 4.0 to 6.x are covered, with an hon
 | [`host/`](host/) | Wireshark `extcap` plugin + multi-channel aggregator (Python). Usage: [host/README.md](host/README.md) |
 | [`hardware/`](hardware/) | Open hardware. **V1** = the fabricated board (JLCEDA Pro source + Gerbers/BOM/case); **V2** = WIP. See [hardware/README.md](hardware/README.md) — note the V1 known issues (single-board works; three-board needs rework). |
 | [`tools/`](tools/) | Build / flash / RTT / extcap-install helper scripts |
-| [`west.yml`](west.yml) | west manifest (pulls NCS from official Nordic GitHub) |
+| [`firmware/blehound/west.yml`](firmware/blehound/west.yml) | west manifest (self-contained; pulls NCS from official Nordic GitHub under firmware/) |
 
 ## Quick start
 
 ```bash
-# 1) Firmware (from an empty workspace directory)
+# 1) Firmware — self-contained west workspace lives in firmware/
 git clone https://github.com/BLEhound/BLEhound
-west init -l BLEhound && west update && west zephyr-export
-west build -b blehound_v1/nrf54lm20a/cpuapp -s BLEhound/firmware -- -DBOARD_ROOT=.
-# revised board (V2): -b blehound_v2/nrf54lm20a/cpuapp
-west flash            # or: BLEhound/tools/flash.sh
+cd BLEhound
+( cd firmware && west init -l blehound && west update && west zephyr-export )
+tools/build.sh                        # nRF54LM20A → build/ ; V2=1 for the revised board
+tools/flash_jlink.sh                  # flash via J-Link
 
 # 2) Host plugin
-BLEhound/tools/install_extcap.sh      # copies the extcap into Wireshark
+tools/install_extcap.sh               # copies the extcap into Wireshark
 # then open Wireshark → interface "BLEhound Sniffer"
 ```
 

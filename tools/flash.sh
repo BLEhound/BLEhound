@@ -3,7 +3,7 @@
 # Flash script -- flashes via J-Link using modern nrfutil (the device command).
 # More reliable than west's jlink runner (can pair with recover to clear APPROTECT).
 #
-# Current default target: real board BLEhound (nRF54LM20A), hex taken from build_dongle/ (tools/build.sh's default output).
+# Current default target: real board BLEhound (nRF54LM20A), hex taken from build/ (tools/build.sh's default output).
 # All three chips U1/U2/U3 run the same firmware; whichever chip's SWD header (J3/J6/J9) the J-Link is plugged into gets flashed.
 # An external J-Link does not power the board, so the board needs USB-C connected separately.
 #
@@ -22,23 +22,20 @@ require_nrfutil
 SN="$(resolve_jlink_sn)"
 echo "== Target: SN=$SN"
 
-# Auto-select the hex: real-board output first (build_dongle/); then the multi-image (with bootloader) merged.hex;
-# the single-image sysbuild output is in build/firmware/zephyr/; the non-sysbuild legacy layout is in build/zephyr/.
+# Auto-select the hex: real-board output first (build/); then the multi-image (with bootloader) merged.hex;
+# the sysbuild whole-chip output is in build/blehound/blehound_merged.hex.
 # With MCUboot the merged_*.hex (MCUboot + firmware loader + signed app) must be flashed: the app's own zephyr.hex
 # is linked at 0x23000 and cannot run without the bootloader. Erase the whole chip first: the app moved from 0x0 to
 # 0x23000, MCUboot would treat old-firmware leftovers as garbage, but a clean chip is safer.
 if [ -n "${1:-}" ]; then
     HEX="$1"
-elif [ -f "$PROJ_DIR/build_dongle/blehound/blehound_merged.hex" ]; then
-    HEX="$PROJ_DIR/build_dongle/blehound/blehound_merged.hex"
-elif [ -f "$PROJ_DIR/build_dongle/firmware/zephyr/zephyr.hex" ]; then
-    HEX="$PROJ_DIR/build_dongle/firmware/zephyr/zephyr.hex"
-elif [ -f "$PROJ_DIR/build/merged.hex" ]; then
-    HEX="$PROJ_DIR/build/merged.hex"
-elif [ -f "$PROJ_DIR/build/firmware/zephyr/zephyr.hex" ]; then
-    HEX="$PROJ_DIR/build/firmware/zephyr/zephyr.hex"
+elif [ -f "$PROJ_DIR/build/blehound/blehound_merged.hex" ]; then
+    HEX="$PROJ_DIR/build/blehound/blehound_merged.hex"
+elif [ -f "$PROJ_DIR/build_v2/blehound/blehound_merged.hex" ]; then
+    HEX="$PROJ_DIR/build_v2/blehound/blehound_merged.hex"
 else
-    HEX="$PROJ_DIR/build/zephyr/zephyr.hex"
+    echo "Error: no hex found, build first: tools/build.sh" >&2
+    exit 1
 fi
 
 [ -f "$HEX" ] || { echo "Error: firmware does not exist: $HEX"; exit 1; }

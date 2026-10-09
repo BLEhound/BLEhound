@@ -9,7 +9,7 @@
 #   If the board is already in the loader (e.g. a previous update was interrupted), start from step 3.
 #
 # Usage:
-#   tools/dfu.sh /dev/cu.usbmodem112101                       # update this board (default: the signed image from build_dongle)
+#   tools/dfu.sh /dev/cu.usbmodem112101                       # update this board (default: the signed image from build)
 #   tools/dfu.sh /dev/cu.usbmodem112101 path/to/blehound_ota.bin
 #   tools/dfu.sh all                                          # update every "BLEhound Sniffer" port in turn (macOS)
 #   tools/dfu.sh /dev/cu.usbmodemXXX --list                   # only list the images the loader reports
@@ -20,7 +20,7 @@ set -euo pipefail
 PROJ_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 NRFUTIL_BIN="${NRFUTIL:-$HOME/.nrfutil/bin/nrfutil}"
 PYTHON="${PYTHON:-python3}"
-IMG_DEFAULT="$PROJ_DIR/build_dongle/blehound/blehound_ota.bin"
+IMG_DEFAULT="$PROJ_DIR/build/blehound/blehound_ota.bin"
 
 usage() { sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
 [ $# -ge 1 ] || usage

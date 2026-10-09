@@ -1,0 +1,26 @@
+{
+    // Terminal profiles. west, the Zephyr SDK and J-Link are expected on PATH
+    // (no machine-specific paths are injected here).
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.defaultProfile.osx": "zsh",
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.profiles.osx": {
+        "zsh": { "path": "/bin/zsh", "args": ["-l"] }
+    },
+    "terminal.integrated.profiles.linux": {
+        "bash": { "path": "/bin/bash", "args": ["-l"] }
+    },
+
+    // Tell Zephyr which toolchain to use. ZEPHYR_BASE is intentionally NOT set:
+    // west locates zephyr from the workspace; pinning it here fights west.
+    "terminal.integrated.env.windows": { "ZEPHYR_TOOLCHAIN_VARIANT": "zephyr" },
+    "terminal.integrated.env.osx":     { "ZEPHYR_TOOLCHAIN_VARIANT": "zephyr" },
+    "terminal.integrated.env.linux":   { "ZEPHYR_TOOLCHAIN_VARIANT": "zephyr" },
+
+    // Format C/C++ with clang-format using the workspace .clang-format.
+    "C_Cpp.formatting": "clangFormat",
+    "C_Cpp.clang_format_style": "file",
+    "C_Cpp.clang_format_fallbackStyle": "LLVM",
+
+    "cmake.ignoreCMakeListsMissing": true
+}

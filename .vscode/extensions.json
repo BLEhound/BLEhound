@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "nordic-semiconductor.nrf-connect",
+    "nordic-semiconductor.nrf-devicetree",
+    "nordic-semiconductor.nrf-kconfig",
+    "ms-vscode.cpptools"
+  ]
+}

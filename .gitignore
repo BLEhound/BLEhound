@@ -1,8 +1,19 @@
-# Zephyr / west build artifacts
+# Build artifacts
 build/
 build_*/
 twister-out*/
-.west/
+*.o
+*.elf
+*.bin
+*.map
+
+# west: self-contained workspace — NCS deps are pulled under firmware/ (next to blehound/), not committed
+/firmware/.west/
+/firmware/nrf/
+/firmware/zephyr/
+/firmware/nrfxlib/
+/firmware/modules/
+/firmware/bootloader/
 
 # Python
 __pycache__/
@@ -13,4 +24,3 @@ __pycache__/
 # OS / editor
 .DS_Store
 *.swp
-.vscode/

@@ -8,15 +8,16 @@
 三板同步多信道抓包成为可能。
 
 - **目标芯片：** nRF54LM20A（主用，搭配 nRF21540 FEM）与 nRF52840。
-- **SDK：** nRF Connect SDK **v3.4.0**（在顶层 `west.yml` 中锁定）。
+- **SDK：** nRF Connect SDK **v3.4.0**（在`firmware/blehound/west.yml` 中锁定）。
 
 ## 工具链搭建（west）
 
 ```bash
-# From an empty workspace directory (its path must contain no spaces):
+# 克隆仓库（路径不要含空格），在 firmware/ 内搭建自包含工作区：
 git clone https://github.com/BLEhound/BLEhound
-west init -l BLEhound        # BLEhound/west.yml is the manifest
-west update                  # pulls NCS (nrf/zephyr/...) from official Nordic GitHub
+cd BLEhound/firmware
+west init -l blehound        # firmware/blehound/west.yml 是 manifest
+west update                  # 从 Nordic 官方 GitHub 拉取 NCS(nrf/zephyr/...)到 firmware/ 下
 west zephyr-export
 ```
 
@@ -25,20 +26,21 @@ west zephyr-export
 你还需要一个与 NCS v3.4.0 兼容的 Zephyr SDK（1.0.1）。若未被自动检测到，请用
 `ZEPHYR_SDK_INSTALL_DIR` 指向它。
 
-> **已经有 NCS v3.4.0 工作区?** 不必重新下载 —— 跳过 `west init` / `west update`,直接把构建脚本指向现成的 NCS:`NCS_TOPDIR=/path/to/ncs BLEhound/tools/build.sh`。
+> **已经有 NCS v3.4.0 工作区?** 不必重新下载 —— 跳过 `west init` / `west update`,直接把构建脚本指向现成的 NCS:`NCS_TOPDIR=/path/to/ncs tools/build.sh`。
 
 ## 构建
 
 ```bash
-# BLEhound V1(首批板);板定义在 firmware/boards/blehound_v{1,2}/
-west build -b blehound_v1/nrf54lm20a/cpuapp -s BLEhound/firmware -- -DBOARD_ROOT=.
-# revised board (V2): -b blehound_v2/nrf54lm20a/cpuapp
+# 在 firmware/ 下执行。板定义在 firmware/blehound/boards/blehound_v{1,2}/,
+# 经 blehound/zephyr/module.yml 自动发现,无需 -DBOARD_ROOT。
+west build -b blehound_v1/nrf54lm20a/cpuapp blehound/projects/blehound --sysbuild
+# 改版板(V2): -b blehound_v2/nrf54lm20a/cpuapp
 ```
 
 或使用便捷封装脚本（自动选择 overlay 和输出目录）：
 
 ```bash
-BLEhound/tools/build.sh                          # nRF54LM20A dongle → build_dongle/
+tools/build.sh                          # nRF54LM20A dongle → build/
 ```
 
 ## 烧录
@@ -46,23 +48,23 @@ BLEhound/tools/build.sh                          # nRF54LM20A dongle → build_d
 ```bash
 west flash
 # or, via nrfutil + J-Link (handles APPROTECT recovery):
-BLEhound/tools/flash.sh                 # auto-detects the J-Link and hex
-RECOVER=1 BLEhound/tools/flash.sh       # recover (unlock APPROTECT) first
+tools/flash.sh                 # auto-detects the J-Link and hex
+RECOVER=1 tools/flash.sh       # recover (unlock APPROTECT) first
 ```
 
 每块板烧录的都是同一份固件；三板方案下，把三块都烧上，并连接你正在编程的那块板的
 SWD 排针。
 
 构建是 sysbuild 三镜像（MCUboot + USB 固件加载器 + 签名应用，布局见
-`boards/common/blehound_partitions.dtsi`）。产物统一以固定名字收在 `build_dongle/blehound/`：
+`firmware/blehound/boards/common/blehound_partitions.dtsi`）。产物统一以固定名字收在 `build/blehound/`：
 `blehound_mcu_boot.*`、`blehound_loader.*`、`blehound_app.*`（各有 bin/hex/elf/map）、
 `blehound_ota.bin` / `blehound_ota.zip`（DFU 上传用）和 `blehound_merged.hex`（整片，J-Link 烧这个）。
 之后升级不再需要 J-Link：
 
 ```bash
-BLEhound/tools/dfu.sh /dev/cu.usbmodemXXXX      # 对一块板做 USB DFU（默认用 build_dongle/blehound/blehound_ota.bin）
-BLEhound/tools/dfu.sh all                       # 依次升级每块板
-BLEhound/tools/verify_flash.sh <J-Link SN>      # 逐字节比对片上三个分区
+tools/dfu.sh /dev/cu.usbmodemXXXX      # 对一块板做 USB DFU（默认用 build/blehound/blehound_ota.bin）
+tools/dfu.sh all                       # 依次升级每块板
+tools/verify_flash.sh <J-Link SN>      # 逐字节比对片上三个分区
 ```
 
 `dfu.sh` 往抓包口发 `HOST_CMD_ENTER_DFU`，板子重新枚举为 "BLEhound Loader"（PID 0x5210），
@@ -71,7 +73,7 @@ BLEhound/tools/verify_flash.sh <J-Link SN>      # 逐字节比对片上三个分
 
 **签名密钥。** MCUboot 只启动用「公钥已编进它」的那把 key 签的镜像。`tools/keygen.sh`
 在仓库外生成 ed25519 密钥 `~/.blehound/keys/blehound_ed25519.pem`（切勿入库），并把公钥导出到
-`firmware/keys/blehound_ed25519.pub.pem`；`tools/build.sh` 会自动使用私钥（也可用
+`firmware/blehound/projects/blehound/keys/blehound_ed25519.pub.pem`；`tools/build.sh` 会自动使用私钥（也可用
 `BLEHOUND_SIGNING_KEY` 指定）。没有 key 时回落到 MCUboot 公开的开发 key 并告警：本地调试可以，
 不能发布。换 key 会改变 MCUboot，老板子要先用 J-Link 重烧一次 `blehound_merged.hex` 才认新签名。
 

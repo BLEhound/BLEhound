@@ -7,7 +7,7 @@
 # commander script to do connect -> erase -> loadfile -> reset.
 #
 # Usage:
-#   tools/flash_jlink.sh                          # auto-select build/firmware/zephyr/zephyr.hex
+#   tools/flash_jlink.sh                          # auto-select build/blehound/blehound_merged.hex
 #   tools/flash_jlink.sh path/to/app.hex          # specify the hex
 #   SN=<jlink serial> tools/flash_jlink.sh        # specify the target when there are multiple debuggers
 #   DEVICE=nRF52840_xxAA tools/flash_jlink.sh     # switch chip
@@ -34,16 +34,13 @@ SPEED="${SPEED:-4000}"
 
 [ -x "$JLINKEXE" ] || { echo "Error: JLinkExe not found: $JLINKEXE"; exit 1; }
 
-# Select the hex: the sysbuild-layout output is in build/firmware/zephyr/; with a bootloader it is merged.hex;
-# the non-sysbuild legacy layout is in build/zephyr/.
+# Select the hex: the sysbuild whole-chip output is build/blehound/blehound_merged.hex (V2 -> build_v2).
 if [ -n "${1:-}" ]; then
     HEX="$1"
-elif [ -f "$PROJ_DIR/build/merged.hex" ]; then
-    HEX="$PROJ_DIR/build/merged.hex"
-elif [ -f "$PROJ_DIR/build/firmware/zephyr/zephyr.hex" ]; then
-    HEX="$PROJ_DIR/build/firmware/zephyr/zephyr.hex"
-elif [ -f "$PROJ_DIR/build/zephyr/zephyr.hex" ]; then
-    HEX="$PROJ_DIR/build/zephyr/zephyr.hex"
+elif [ -f "$PROJ_DIR/build/blehound/blehound_merged.hex" ]; then
+    HEX="$PROJ_DIR/build/blehound/blehound_merged.hex"
+elif [ -f "$PROJ_DIR/build_v2/blehound/blehound_merged.hex" ]; then
+    HEX="$PROJ_DIR/build_v2/blehound/blehound_merged.hex"
 else
     echo "Error: no hex found, build first: tools/build.sh" >&2
     exit 1
