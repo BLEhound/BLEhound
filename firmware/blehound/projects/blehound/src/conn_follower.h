@@ -69,6 +69,11 @@ struct conn_follower_stats {
 	uint32_t open_cost_max_us; /**< Maximum time to configure the radio (switch channel/AA/CRC + ramp-up) */
 	uint32_t open_cost_sum_us; /**< Same as above, accumulated; combine with open_count for the average */
 	uint32_t open_count;       /**< Number of serve_open calls */
+	uint32_t preempted;        /**< Single-target mode: stale ACL slots released on the target's reconnect (old connection dead but not yet timed out) */
+	uint32_t relock_yields;    /**< Single-target relock state: events yielded back to the guard channel */
+	uint32_t map_probes;       /**< Encrypted link: events that probed unmapped channels after missing */
+	uint32_t map_changed;      /**< Times probing confirmed the peer changed its channel map and we switched to unmapped-guarding */
+	uint32_t never_established; /**< ACL slots released on establishment failure (peripheral never answered, central stopped; see follow_policy_never_established) */
 };
 
 /** Snapshot of a single tracked connection (for evaluation) */

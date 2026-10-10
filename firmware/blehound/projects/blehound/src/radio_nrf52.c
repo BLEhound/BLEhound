@@ -462,6 +462,17 @@ int radio_rx_start(void)
 	return 0;
 }
 
+bool radio_rx_recover(void)
+{
+	/* RX shutdown is 0µs on the nRF52, so the RXEN in the ISR never lands in a bad window; kept
+	 * as a fallback to stay behaviourally identical to the nRF54L. */
+	if (!rx_running || NRF_RADIO->STATE != RADIO_STATE_STATE_Disabled) {
+		return false;
+	}
+	NRF_RADIO->TASKS_RXEN = 1;
+	return true;
+}
+
 void radio_rx_stop(void)
 {
 	if (!rx_running) {

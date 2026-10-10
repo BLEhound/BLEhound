@@ -120,8 +120,9 @@ struct host_status {
 #define HOST_FLAG_DIR_S2M     (1U << 1)  /**< direction peripheral→central (meaningful only when HOST_FLAG_DIR_KNOWN is set) */
 #define HOST_FLAG_ENCRYPTED   (1U << 2)  /**< this packet is encrypted (reserved for phases B/C) */
 #define HOST_FLAG_TRI         (1U << 3)  /**< tri-device mode: 5-byte extension after the header (board_id + sync_epoch) */
-#define HOST_FLAG_DIR_KNOWN   (1U << 4)  /**< Direction of a data-channel packet is known: the follower decides by packet order within
-                                            *   the connection event, first packet = central→peripheral, the rest = peripheral→central (see DIR_S2M) */
+#define HOST_FLAG_DIR_KNOWN   (1U << 4)  /**< Direction of a data-channel packet is known: the follower decides by air timing within
+                                            *   the connection event, first packet = central→peripheral, every packet one T_IFS later flips
+                                            *   the direction (dir_policy.h); not set when a dropped packet makes it ambiguous */
 
 /** header length (all fixed fields before pdu) */
 #define HOST_FRAME_HEADER_LEN 17

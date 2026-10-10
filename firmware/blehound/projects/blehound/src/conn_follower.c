@@ -22,6 +22,7 @@
 #include "conn_follower.h"
 #include "scan_policy.h"
 #include "follow_policy.h"
+#include "dir_policy.h"     /* Direction of a data-channel packet within an event, by T_IFS alternation (has host-side unit tests) */
 #include "ble_csa.h"
 #include "ble_ctrl_pdu.h"   /* Pure parsing of the 6.x new LL control PDUs (has host-side unit tests) */
 #include "tri_coord.h"      /* SYNC edge tick in the logs, to cross-check the inter-board anchor conversion */
@@ -139,6 +140,8 @@ LOG_MODULE_DECLARE(sniffer, LOG_LEVEL_INF);
  * so a 6ms window covers the vast majority; a huge 255B packet (~17ms) occasionally gets truncated, which is acceptable. */
 #define CODED_EVENT_US           6000u
 
+#define ADV_PDU_ADV_IND          0x00
+#define ADV_PDU_ADV_DIRECT_IND   0x01
 #define ADV_PDU_CONNECT_IND      0x05
 #define ADV_PDU_EXT_IND          0x07     /* ADV_EXT_IND / AUX_* share this type */
 #define ADV_PDU_DECISION_IND     0x09     /* Decision-based advertising filtering (6.0): new primary-channel PDU type */
@@ -228,6 +231,7 @@ struct conn_slot {
 	 * (we merely capture less). The host decrypts the channel-map update with the LTK and relays it (key
 	 * hint); once it takes effect at the instant the map is trusted again. */
 	bool map_trusted;
+	bool probing_unmapped;    /* This event is probing on unmapped channels (follow_policy_map_probe_unmapped) */
 	bool periodic;            /* Periodic advertising slot: receives AUX_SYNC_IND, doesn't parse LL control packets */
 	bool pawr;                /* PAwR (5.4) periodic train: one periodic event contains multiple subevents */
 	uint32_t pawr_rsp_aa;     /* PAwR: access address of the response packet (RspAA in ACAD 0x32) */
@@ -266,6 +270,8 @@ struct conn_slot {
 	uint32_t next_mts;        /* Predicted time of the next master packet */
 	uint32_t first_win_us;    /* Widened window of the first event; 0 means the first event has passed */
 	uint16_t miss_count;
+	bool central_seen;        /* ACL: the central's packet was heard (CRC OK) */
+	bool peripheral_seen;     /* ACL: the peripheral's packet was heard (CRC OK) = the connection really was established */
 	/* ---- Supervision timeout & connection subrating (subrating, BLE 5.3) ---- */
 	uint16_t timeout_10ms;    /* Supervision timeout, ×10ms; 0=unknown (fall back to fixed threshold) */
 	uint16_t latency;         /* Peripheral latency (number of connection events allowed to be skipped) */
@@ -298,7 +304,6 @@ enum radio_mode {
 	MODE_SCANNING = 0,  /* Radio receiving on an advertising channel (pure scanning or scanning during an event gap) */
 	MODE_SERVING,       /* Radio serving some connection's event */
 	MODE_SERVING_AUX,   /* Radio receiving an extended-advertising AUX packet on a secondary channel */
-	MODE_IDLE,          /* Single-target locked: stop receiving during event gaps, don't scan */
 };
 
 static struct {
@@ -322,6 +327,7 @@ static struct {
 	enum radio_mode mode;
 	int serving_idx;          /* Which slot is being served in MODE_SERVING */
 	uint8_t pkts_this_event;
+	struct dir_tracker dir;   /* Per-event direction inference for data-channel packets (ACL slot) */
 	bool got_master;
 	bool got_data;            /* Whether a CRC-OK packet was received this event (a BIS slot uses it to judge liveness) */
 	uint32_t master_ts;
@@ -411,6 +417,61 @@ static void refresh_active_stats(void)
 	}
 }
 
+/* Single-target mode, target reconnecting: release existing ACL slots (not BIS/periodic).
+ * only_stale=true releases only slots already receiving nothing (the inject path, no AdvA to
+ * compare); false releases all (we caught the target's own CONNECT_IND, so the old connection must
+ * be dead). */
+static void preempt_acl_slots(bool only_stale)
+{
+	uint8_t released = 0;
+
+	for (int i = 0; i < CONN_FOLLOW_MAX_SLOTS; i++) {
+		struct conn_slot *s = &f.slots[i];
+
+		if (!s->active || s->bis || s->periodic) {
+			continue;
+		}
+		if (only_stale && !follow_policy_preempts_on_inject(g_single_target, s->miss_count)) {
+			continue;
+		}
+		s->active = false;
+		released++;
+		LOG_INF("slot AA=%08X preempted by target reconnect (missed %u in a row, captured %u packets)",
+			s->aa, s->miss_count, s->data_packets);
+	}
+	if (released > 0) {
+		f.stats.preempted += released;
+		refresh_active_stats();
+	}
+}
+
+/* The target's connectable advertising: release stale ACL slots. Returns whether at least one was
+ * released. */
+static bool preempt_stale_on_target_adv(void)
+{
+	uint8_t released = 0;
+
+	for (int i = 0; i < CONN_FOLLOW_MAX_SLOTS; i++) {
+		struct conn_slot *s = &f.slots[i];
+
+		if (!s->active || s->bis || s->periodic) {
+			continue;
+		}
+		if (!follow_policy_preempts_on_target_adv(g_single_target, true, s->miss_count)) {
+			continue;
+		}
+		s->active = false;
+		released++;
+		LOG_INF("slot AA=%08X released: target is advertising again (missed %u in a row, captured %u packets)",
+			s->aa, s->miss_count, s->data_packets);
+	}
+	if (released > 0) {
+		f.stats.preempted += released;
+		refresh_active_stats();
+	}
+	return released > 0;
+}
+
 /* ------------------------------------------------------------ External interface */
 
 void conn_follower_init(uint8_t scan_channel)
@@ -468,7 +529,9 @@ uint8_t conn_follower_last_packet_direction(void)
 	if (s->bis || s->periodic) {
 		return 0;
 	}
-	return f.pkts_this_event == 1 ? 1 : 2;
+	/* Derived by conn_follower_on_packet as "first packet = central, then flip on every T_IFS",
+	 * see dir_policy.h; DIR_* matches HOST_DIR_*. */
+	return f.dir.last;
 }
 
 bool conn_follower_is_following(void)
@@ -594,6 +657,12 @@ static void start_following_on(const struct radio_packet *pkt, uint8_t phy,
 
 	for (int i = 0; adva_matches && i < 6; i++) {
 		adva_matches = p[2 + 6 + i] == f.target_mac[i];
+	}
+	/* The target's own new CONNECT_IND = the old connection is dead (no TERMINATE after encryption,
+	 * the stale slot would only be released at timeout): release the old slot first, otherwise the
+	 * active_connections==0 gate below would block the reconnection. */
+	if (follow_policy_preempts_on_connect(g_single_target, adva_matches)) {
+		preempt_acl_slots(false);
 	}
 	if (!follow_policy_allows(g_single_target, f.target_active, adva_matches,
 				  conn_follower_active_connections())) {
@@ -797,6 +866,9 @@ static void poll_inject(void)
 	if (interval_us == 0 || find_slot_by_aa(p.aa) >= 0) {
 		return;   /* Illegal, or this device already captured and is following it — ignore the relay */
 	}
+	/* The inject means "another board caught the target's CONNECT_IND": a slot we are still following
+	 * that is already receiving nothing is dead. */
+	preempt_acl_slots(true);
 	if (!follow_policy_allows_inject(g_single_target, f.target_active,
 					 conn_follower_active_connections())) {
 		return;   /* Single-target mode: no relay without a target, and none while already following another connection */
@@ -1001,7 +1073,11 @@ static void handle_data_pdu(struct conn_slot *s, const struct radio_packet *pkt)
 
 	if (opcode == LL_ENC_REQ) {
 		s->encrypted = true;   /* Payload is ciphertext afterwards, no longer parsed */
-		s->map_trusted = false; /* Channel-map updates are invisible from here on: guard the unmapped channel and wait for a host hint */
+		/* Channel-map updates are invisible from here on, but **keep trusting the known map**: a
+		 * phone often enables only 10 channels, and switching to the unmapped channel on encryption
+		 * would cut the hit rate to 10/37 and drop the LL_ENC_RSP that follows. Whether the map has
+		 * changed is decided by probing after missing (follow_policy.h "Channel-map policy for an
+		 * encrypted link"), and the host's key hint can also relay the new map. */
 		return;
 	}
 	if (s->encrypted) {
@@ -1423,10 +1499,22 @@ static inline uint16_t relock_after(const struct conn_slot *s)
 	return unmapped_mode(s) ? UNMAPPED_RELOCK_MISS : RELOCK_AFTER_MISS;
 }
 
+static inline bool chan_in_map(const uint8_t map[5], uint8_t ch)
+{
+	return ch < 37u && ((map[ch / 8u] >> (ch % 8u)) & 1u) != 0u;
+}
+
 static uint8_t channel_for_event(struct conn_slot *s)
 {
+	s->probing_unmapped = false;
 	if (unmapped_mode(s)) {
 		f.stats.unmapped_events++;
+		return ble_csa2_next(s->event_counter, s->chan_id, k_full_chan_map, 37u);
+	}
+	if (s->csa2 && follow_policy_map_probe_unmapped(s->encrypted, s->map_trusted, s->miss_count)) {
+		/* Encrypted link missing: this event probes unmapped channels to see if the peer changed its map */
+		s->probing_unmapped = true;
+		f.stats.map_probes++;
 		return ble_csa2_next(s->event_counter, s->chan_id, k_full_chan_map, 37u);
 	}
 	if (s->csa2) {
@@ -2305,6 +2393,7 @@ static void serve_open(int idx)
 	f.serving_idx = idx;
 	f.mode = MODE_SERVING;
 	f.pkts_this_event = 0;
+	dir_tracker_reset(&f.dir);
 	f.got_master = false;
 	f.got_data = false;
 
@@ -2465,6 +2554,14 @@ static void serve_close(void)
 			if (!s->bis && s->miss_count >= relock_after(s)) {
 				f.stats.relock_recovered++;   /* Re-acquired after widening the window */
 			}
+			/* Received on an unmapped channel during probing, and that channel is not in the old map = the peer changed its map; guard unmapped channels from here on */
+			if (follow_policy_map_changed(s->probing_unmapped,
+						      chan_in_map(s->chan_map, s->pawr_last_ch))) {
+				s->map_trusted = false;
+				f.stats.map_changed++;
+				LOG_INF("slot AA=%08X: channel map changed under encryption (packet on unmapped ch %u), now guarding unmapped channels",
+					s->aa, s->pawr_last_ch);
+			}
 			s->miss_count = 0;
 			s->events++;
 			f.stats.conn_events++;
@@ -2475,7 +2572,19 @@ static void serve_close(void)
 			if (s->bis && s->miss_count >= BIS_RELOCK_MISS) {
 				s->bis_locked = false;
 			}
-			if (s->miss_count >= supervision_limit(s)) {
+			if (!s->bis && !s->periodic &&
+			    follow_policy_never_established(s->central_seen, s->peripheral_seen,
+							    s->miss_count)) {
+				/* Establishment failure (peripheral didn't answer, central stopped after 6
+				 * intervals) or neither side ever heard: don't wait for supervision timeout,
+				 * release immediately back to guarding to catch the stack's retry. */
+				s->active = false;
+				f.stats.never_established++;
+				refresh_active_stats();
+				LOG_INF("slot AA=%08X never established (central heard=%d, peripheral never "
+					"answered, missed %u in a row) - back to guard channel",
+					s->aa, (int)s->central_seen, s->miss_count);
+			} else if (s->miss_count >= supervision_limit(s)) {
 				s->active = false;
 				f.stats.lost++;
 				if (!s->bis && !s->periodic) {
@@ -2525,6 +2634,17 @@ static void serve_close(void)
 		if (!s->bis) {
 			s->event_counter++;   /* The ISO counter was already computed by real time above */
 			subrate_skip(s);
+			/* Single-target relock state: yield every other event entirely to the guard channel
+			 * (see follow_policy.h). A yielded event is not counted as a miss (miss only counts
+			 * events actually listened to); anchor/counters advance as usual. */
+			if (!s->pawr && !s->periodic &&
+			    follow_policy_relock_yields_scan(g_single_target, s->miss_count,
+							     relock_after(s))) {
+				s->next_mts += s->interval_us;
+				s->event_counter++;
+				subrate_skip(s);
+				f.stats.relock_yields++;
+			}
 		}
 		apply_pending_if_due(s);
 	}
@@ -2590,17 +2710,15 @@ static void arm_next(void)
 	const int32_t gap = (int32_t)(open_us - now);
 
 	if (gap > (int32_t)SCAN_SLICE_MIN_US) {
-		if (single_target_locked()) {
-			/* Single-target mode: a connection is locked, don't return to the advertising channels during a gap — don't look at other devices, don't take new connections.
-			 * Just stop receiving; after the slot is released, the idx<0 branch will re-enter enter_scan_radio to take the target's reconnect. */
-			if (f.mode != MODE_IDLE) {
-				radio_rx_stop();
-				f.mode = MODE_IDLE;
-			}
-		} else if (f.mode != MODE_SCANNING) {
+		if (f.mode != MODE_SCANNING) {
 			/* Still a while until the next event, use the gap to scan. Only rotate to another advertising channel when round-robin is allowed;
 			 * the tri-device stubborn-guard mode must stay on the strap-assigned channel (otherwise after following a connection once, the guard channel would be rotated away,
-			 * and the 2026-09-19 on-board test had the three devices guarding 38/37/38, with no one guarding 39). */
+			 * and the 2026-09-19 on-board test had the three devices guarding 38/37/38, with no one guarding 39).
+			 *
+			 * Single-target mode **also returns to the guard channel** (before 2026-10-10 it stopped receiving in MODE_IDLE): other devices are filtered out by main's target
+			 * filter so nothing extra is seen; the cost of not returning is that during the few seconds when the old connection is dead but not yet timed out (no TERMINATE
+			 * visible after encryption, and relock widened the window to a full interval) none of the three boards is on an advertising channel, so the target's reconnect
+			 * CONNECT_IND is certainly lost. */
 			f.scan_channel = scan_channel_after_gap(f.scan_channel, f.scan_hopping);
 			enter_scan_radio();
 		}
@@ -2656,6 +2774,24 @@ void conn_follower_on_packet(const struct radio_packet *pkt)
 		f.pkts_this_event++;
 		if (pkt->pdu_len > s->max_pdu_seen) {
 			s->max_pdu_seen = pkt->pdu_len;
+		}
+		if (!s->bis && !s->periodic) {
+			/* ACL: infer direction by air timing. The timestamp is the instant the AA finished,
+			 * so add preamble+AA and header+payload+CRC on each side for this packet's start/end;
+			 * the shortest PDU is an empty packet (2-byte header). */
+			const uint32_t head = preamble_aa_us(pkt->phy);
+			const uint32_t tail = pdu_tail_air_us(pkt->phy, pkt->pdu_len);
+			const uint16_t ifs = s->frame_space_us ? s->frame_space_us : T_IFS_US;
+
+			const uint8_t dir = dir_tracker_on_packet(&f.dir, pkt->timestamp_us - head,
+								  pkt->timestamp_us + tail, ifs,
+								  head + pdu_tail_air_us(pkt->phy, 2));
+
+			if (pkt->crc_ok && dir == DIR_C2P) {
+				s->central_seen = true;
+			} else if (pkt->crc_ok && dir == DIR_P2C) {
+				s->peripheral_seen = true;
+			}
 		}
 		if (f.pkts_this_event == 1) {
 			f.got_master = true;
@@ -2761,6 +2897,23 @@ void conn_follower_on_packet(const struct radio_packet *pkt)
 	if (pkt->crc_ok && (pkt->pdu[0] & 0x0F) == ADV_PDU_CONNECT_IND &&
 	    pkt->pdu_len >= 2 + 34) {
 		start_following(pkt);
+		return;
+	}
+
+	/* Scanning state: the target sends connectable advertising (ADV_IND / ADV_DIRECT_IND) = the old
+	 * connection is dead (reset after OTA, or before a phone reconnects). Release the stale slot and
+	 * return to full-time guarding immediately, don't wait for supervision timeout. */
+	if (pkt->crc_ok && f.target_active && pkt->pdu_len >= 2 + 6 &&
+	    ((pkt->pdu[0] & 0x0F) == ADV_PDU_ADV_IND ||
+	     (pkt->pdu[0] & 0x0F) == ADV_PDU_ADV_DIRECT_IND)) {
+		bool adva_matches = true;
+
+		for (int i = 0; adva_matches && i < 6; i++) {
+			adva_matches = pkt->pdu[2 + i] == f.target_mac[i];
+		}
+		if (adva_matches && preempt_stale_on_target_adv()) {
+			arm_next();   /* After releasing the stale slot, re-plan: cancel its pending serve, stay on the guard channel */
+		}
 		return;
 	}
 

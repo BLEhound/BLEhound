@@ -117,6 +117,16 @@ int radio_rx_start(void);
 /** Stop receiving. */
 void radio_rx_stop(void);
 
+/**
+ * Receive watchdog (thread context, called periodically): if rx_start has run yet the radio is
+ * found stuck in the DISABLED state (e.g. the RXEN issued in the ISR after receiving a packet was
+ * not accepted by the hardware), re-issue RXEN once. In guard-channel mode with no connection the
+ * schedule chain is SCHED_NONE and nothing else would bring receiving back up -- without this
+ * fallback the board goes deaf forever.
+ * @return true if a recovery was actually performed (the caller counts it)
+ */
+bool radio_rx_recover(void);
+
 /* ---- Timed scheduling (for connection following) --------------------------
  *
  * Connection following needs to switch channels and open the receive window at precise moments.

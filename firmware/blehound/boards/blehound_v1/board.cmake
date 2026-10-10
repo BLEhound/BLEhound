@@ -4,5 +4,6 @@
 
 board_runner_args(jlink "--device=nRF54LM20A_M33" "--speed=4000")
 
-include(${ZEPHYR_BASE}/boards/common/nrfutil.board.cmake)
+# J-Link only: nrfutil-device does not recognise the nRF54LM20A engineering samples
+# ("Unknown part 0x33"), and the project does not depend on nrfutil anywhere else.
 include(${ZEPHYR_BASE}/boards/common/jlink.board.cmake)

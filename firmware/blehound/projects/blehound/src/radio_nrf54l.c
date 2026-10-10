@@ -22,8 +22,16 @@
 
 #include "radio_hal.h"
 
-#define RADIO_IRQ_PRIORITY   1
-#define TIMER_IRQ_PRIORITY   1
+/* radio/TIMER/kick share one priority (serial domain) and take 0, the highest Zephyr user-IRQ
+ * level: from a received ADV_IND to the CONNECT_IND right after it is only one T_IFS of 150µs, and
+ * after the 40µs fast ramp-up that leaves ~100µs of interrupt latency; USB (dwc2) / GPIOTE / SPIS
+ * are all at the default priority 1, and keeping the radio at the same level would eat that budget
+ * and drop the CONNECT_IND (2026-10-10). */
+#define RADIO_IRQ_PRIORITY   0
+#define TIMER_IRQ_PRIORITY   0
+/* Spin limit (iterations) while waiting for ramp-down to DISABLED after receiving a packet. RX
+ * shutdown is only ~µs, so one or two iterations normally suffice. */
+#define RX_DISABLE_SPIN_MAX  200u
 
 /* The DPPI publish/subscribe registers all use bit31 as the enable bit */
 #define DPPI_PUBSUB_EN       (1UL << 31)
@@ -144,6 +152,18 @@ static void radio_isr(const void *arg)
 	NRF_RADIO->PACKETPTR = (uint32_t)rx_buf[rx_idx];
 
 	if (rx_running) {
+		/* PHYEND->DISABLE is short-circuiting the ramp-down right now. RXEN is only accepted in
+		 * the DISABLED state; issued during RXDISABLE it is dropped by the hardware -> the radio
+		 * stalls in DISABLED and no more interrupts arrive. Wait for DISABLED first, then RXEN
+		 * (normally one or two iterations); if it never comes (e.g. rx_stop cleared SHORTS from
+		 * the thread first) don't force it either. */
+		uint32_t spins = 0;
+
+		while (NRF_RADIO->EVENTS_DISABLED == 0 && spins < RX_DISABLE_SPIN_MAX) {
+			spins++;
+		}
+		NRF_RADIO->EVENTS_DISABLED = 0;
+		(void)NRF_RADIO->EVENTS_DISABLED;
 		NRF_RADIO->TASKS_RXEN = 1;
 	}
 
@@ -471,4 +491,16 @@ void radio_rx_stop(void)
 		/* wait for ramp-down */
 	}
 	NRF_RADIO->EVENTS_DISABLED = 0;
+}
+
+bool radio_rx_recover(void)
+{
+	/* Race with the receive ISR: between PHYEND and RXEN the STATE is also DISABLED for a few µs,
+	 * so an extra RXEN triggered here that lands in RXRU is ignored (harmless); conversely a
+	 * missed one is re-issued on the next tick. */
+	if (!rx_running || NRF_RADIO->STATE != RADIO_STATE_STATE_Disabled) {
+		return false;
+	}
+	NRF_RADIO->TASKS_RXEN = 1;
+	return true;
 }

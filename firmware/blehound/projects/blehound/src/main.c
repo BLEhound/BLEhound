@@ -97,6 +97,8 @@ static struct {
 
 /* Radio-layer per-PHY RX counts (0=1M 1=2M 2/3=Coded), to see whether each PHY decodes healthily */
 static uint32_t phy_rx[4];
+/* Times the RX watchdog re-issued RXEN (checked once per main-loop tick; should stay 0, non-zero means the radio once stalled in DISABLED) */
+static uint32_t rx_recovered;
 static uint32_t phy_rx_ok[4];
 
 /* Current capture parameters. The host can change them; the radio interrupt only reads. */
@@ -694,6 +696,12 @@ int main(void)
 		/* Tri-device time-base heartbeat (board 0 emits a SYNC edge at ~1Hz; internally rate-limited). */
 		tri_coord_periodic();
 
+		/* RX watchdog: if the radio is stuck in DISABLED (the RXEN in the ISR was not accepted), re-issue it so this board doesn't go deaf. */
+		if (radio_rx_recover()) {
+			rx_recovered++;
+			LOG_WRN("radio found DISABLED while RX should be running, restarted (%u)", rx_recovered);
+		}
+
 		/* When the air is completely quiet the RX interrupt never fires; consume the host mailboxes here as a fallback (mutually exclusive with the radio interrupt). */
 		{
 			unsigned int key = irq_lock();
@@ -709,9 +717,10 @@ int main(void)
 
 			conn_follower_get_stats(&cf);
 
-			LOG_INF("stats: CRC_OK %u, CRC_ERR %u, sent %u, queue drops %ld, target filtered %u, USB dropped %u, RPA resolved %u",
+			LOG_INF("stats: CRC_OK %u, CRC_ERR %u, sent %u, queue drops %ld, target filtered %u, USB dropped %u, RPA resolved %u, RX recovered %u",
 				stats.crc_ok, stats.crc_err, stats.sent,
-				atomic_get(&queue_drops), adv_filtered, host_iface_dropped(), rpa_resolved);
+				atomic_get(&queue_drops), adv_filtered, host_iface_dropped(), rpa_resolved,
+				rx_recovered);
 
 			struct tri_coord_stats tc;
 
@@ -739,6 +748,12 @@ int main(void)
 				cf.periodic_synced, cf.bis_synced, cf.cis_synced,
 				cf.subrate_updates, cf.pawr_responses, cf.aux_connects,
 				cf.hints_applied, cf.unmapped_events);
+			LOG_INF("  single-target: stale slots preempted by target reconnect/advertising %u, relock events yielded to guard channel %u",
+				cf.preempted, cf.relock_yields);
+			LOG_INF("  encrypted channel map: probes on unmapped channels %u, map changes detected %u",
+				cf.map_probes, cf.map_changed);
+			LOG_INF("  never established (peripheral never answered, released early): %u",
+				cf.never_established);
 			LOG_INF("  scheduling: max window-open lateness %uus, radio config avg %uus/max %uus (%u times)",
 				cf.open_late_max_us,
 				cf.open_count ? cf.open_cost_sum_us / cf.open_count : 0,
