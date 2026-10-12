@@ -85,7 +85,7 @@ tools/verify_flash.sh <J-Link SN>      # byte-compare all three regions on the c
 ```
 
 `dfu.sh` sends `HOST_CMD_ENTER_DFU` on the capture port, the board re-enumerates as
-"BLEhound Loader" (PID 0x5210) and `nrfutil mcu-manager` uploads the image over SMP.
+"BLEhound Loader" (PID 0x5210) and `tools/blehound_dfu.py` -- a bundled SMP client needing only python3 + pyserial, no nrfutil -- uploads the image over SMP.
 BLEhound Analyzer has the same flow built in (device panel → "Update firmware…").
 
 **Signing key.** MCUboot only boots images signed with the key whose public half is

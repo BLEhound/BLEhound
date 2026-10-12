@@ -79,7 +79,7 @@ tools/verify_flash.sh <J-Link SN>      # 逐字节比对片上三个分区
 ```
 
 `dfu.sh` 往抓包口发 `HOST_CMD_ENTER_DFU`，板子重新枚举为 "BLEhound Loader"（PID 0x5210），
-再由 `nrfutil mcu-manager` 经 SMP 上传镜像。BLEhound Analyzer 内置了同样的流程
+再由 `tools/blehound_dfu.py`（自带 SMP 客户端，只需 python3 + pyserial，不用 nrfutil）经 SMP 上传镜像。BLEhound Analyzer 内置了同样的流程
 （设备面板 →「升级固件…」）。
 
 **签名密钥。** MCUboot 只启动用「公钥已编进它」的那把 key 签的镜像。`tools/keygen.sh`
